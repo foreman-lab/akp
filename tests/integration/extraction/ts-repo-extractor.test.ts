@@ -7,9 +7,8 @@ import test from "node:test";
 import { loadProject } from "../../../src/core/config/load-project.js";
 import { tsRepoExtractor } from "../../../src/extraction/extractors/ts-repo/index.js";
 
-import type { Dirent } from "node:fs";
-
 import type { KnowledgeObject, Manifest } from "../../../src/core/protocol/types.js";
+import type { Dirent } from "node:fs";
 
 const FIXTURE_ROOT = path.resolve("tests/fixtures/ts-tiny-repo");
 

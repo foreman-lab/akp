@@ -233,12 +233,15 @@ async function* extractUseCases(
   // Function-local regex avoids global-RegExp lastIndex carry-over.
   const factoryPattern = /^export\s+(?:async\s+)?function\s+make([A-Z]\w*)\b/gm;
   const now = new Date().toISOString();
+  const seen = new Set<string>();
 
   for (const filePath of files.sort()) {
     const content = await readFile(filePath, "utf8");
     for (const match of content.matchAll(factoryPattern)) {
       const factoryName = `make${match[1]}`;
       const id = `use_case.${kebabCase(match[1]!)}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
       yield buildUseCaseObject(id, factoryName, filePath, context, now);
     }
   }
@@ -326,6 +329,7 @@ async function* extractPorts(
 
   const portPattern = /^export\s+interface\s+(\w+)Port\b/gm;
   const now = new Date().toISOString();
+  const seen = new Set<string>();
 
   for (const filePath of files.sort()) {
     const content = await readFile(filePath, "utf8");
@@ -333,6 +337,8 @@ async function* extractPorts(
       const tail = match[1]!;
       const interfaceName = `${tail}Port`;
       const id = `port.${kebabCase(tail)}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
       yield buildPortObject(id, interfaceName, filePath, context, now);
     }
   }
