@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.28] - 2026-04-28
+
+### Fixed
+
+- **`extractPorts` and `extractUseCases` now dedupe within a single `extract()` run.** Cross-file duplicate identifier names — legal in TypeScript when the modules are separate — previously produced an opaque `AKP_OBJECT_DUPLICATE` from `canonical.writeAll` because each match yielded an emission. Both extractors now keep a `Set<string>` of emitted ids and skip subsequent matches, mirroring the existing guard in `extractCommands`.
+
+### Changed
+
+- Replaced the bespoke `collectUseCaseFiles` walker with a path-segment filter on top of the more general `collectTypeScriptFiles`. The two walkers were duplicating identical traversal/`.`/`_`-prefix-skip logic; merging them means future skip-rule changes happen in one place. Pure refactor — no behavioral change.
+
+### Internal
+
+- Reviewer-pass follow-up on the alpha.27 cycle. Three commits: RED (`5c35fab`), GREEN dedup (`d20a5ed`), refactor (this commit). 51/51 tests pass; the two new dedup tests use an in-memory `makeFakeSrcTree` helper to inject synthetic readdir/readFile through `TsRepoDependencies`.
+
 ## [0.1.0-alpha.27] - 2026-04-28
 
 ### Added

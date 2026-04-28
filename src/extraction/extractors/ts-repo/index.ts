@@ -227,8 +227,11 @@ async function* extractUseCases(
   readFile: NonNullable<TsRepoDependencies["readFile"]>,
 ): AsyncIterable<KnowledgeObject> {
   const srcDir = path.join(context.rootDir, "src");
-  const files: string[] = [];
-  await collectUseCaseFiles(srcDir, readdir, files);
+  const allFiles: string[] = [];
+  await collectTypeScriptFiles(srcDir, readdir, allFiles);
+  // Use cases live only in `**/use-cases/` directories; filtering on path
+  // avoids matching `make<Name>` factories that happen to live elsewhere.
+  const files = allFiles.filter((file) => file.split(path.sep).slice(0, -1).includes("use-cases"));
 
   // Function-local regex avoids global-RegExp lastIndex carry-over.
   const factoryPattern = /^export\s+(?:async\s+)?function\s+make([A-Z]\w*)\b/gm;
@@ -243,38 +246,6 @@ async function* extractUseCases(
       if (seen.has(id)) continue;
       seen.add(id);
       yield buildUseCaseObject(id, factoryName, filePath, context, now);
-    }
-  }
-}
-
-async function collectUseCaseFiles(
-  srcDir: string,
-  readdir: NonNullable<TsRepoDependencies["readdir"]>,
-  out: string[],
-): Promise<void> {
-  let entries: Dirent[];
-  try {
-    entries = await readdir(srcDir, { withFileTypes: true });
-  } catch (error: unknown) {
-    const nodeError = error as NodeJS.ErrnoException;
-    if (nodeError.code === "ENOENT") return;
-    throw error;
-  }
-
-  for (const entry of entries) {
-    if (entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
-    const childPath = path.join(srcDir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === "use-cases") {
-        const useCaseEntries = await readdir(childPath, { withFileTypes: true });
-        for (const file of useCaseEntries) {
-          if (file.isFile() && file.name.endsWith(".ts")) {
-            out.push(path.join(childPath, file.name));
-          }
-        }
-      } else {
-        await collectUseCaseFiles(childPath, readdir, out);
-      }
     }
   }
 }
