@@ -9,7 +9,7 @@ export async function startMcpServer(): Promise<void> {
 
   const server = new McpServer({
     name: "akp",
-    version: "0.1.0-alpha.21",
+    version: "0.1.0-alpha.22",
   });
 
   server.registerTool(
@@ -85,8 +85,11 @@ export async function startMcpServer(): Promise<void> {
   // `onclose` only fires on a clean protocol close (graceful shutdown RPC or
   // explicit `transport.close()` from the SDK). On abrupt termination — parent
   // killed, stdin EOF without graceful shutdown — `onclose` does not fire and
-  // the SQLite handle is reclaimed by the OS. better-sqlite3 in WAL mode
-  // recovers cleanly on next open, so this is not a data-integrity concern.
+  // the SQLite handle is reclaimed by the OS. This server is **read-only** by
+  // design (no write verbs are registered above), so a missed dispose cannot
+  // strand a pending write; better-sqlite3 in WAL mode also recovers cleanly
+  // on the next open. If a write verb is ever added, revisit this comment and
+  // wire a SIGTERM/SIGINT handler that calls `container.dispose()`.
   transport.onclose = (): void => {
     container.dispose();
   };

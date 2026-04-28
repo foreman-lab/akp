@@ -63,10 +63,10 @@ async function tolerateExisting(promise: Promise<void>): Promise<void> {
   try {
     await promise;
   } catch (error: unknown) {
-    const nodeError = error as NodeJS.ErrnoException;
-    if (nodeError.code !== "EEXIST") {
-      throw error;
+    if (error instanceof Error && (error as NodeJS.ErrnoException).code === "EEXIST") {
+      return;
     }
+    throw error;
   }
 }
 

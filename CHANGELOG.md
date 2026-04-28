@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.22] - 2026-04-28
+
+### Fixed
+
+- `tolerateExisting` in `src/init/use-cases/index.ts` now narrows the caught value with `instanceof Error` before reading `.code`, replacing a bare `as NodeJS.ErrnoException` cast that bypassed the type system. Same behavior — only `EEXIST` is swallowed — but no longer relies on a structural cast to a Node-only interface.
+- Comment in `src/mcp/server.ts` around `transport.onclose` now scopes the WAL-recovery claim to "read-only server." If a write verb is ever added through MCP, the comment instructs the next contributor to add a SIGTERM/SIGINT dispose handler instead of inheriting the WAL fallback.
+
+### Internal
+
+- Both fixes from the typescript-reviewer pass on the alpha.13–alpha.21 hex refactor cycle. 42/42 tests still pass.
+
 ## [0.1.0-alpha.21] - 2026-04-28
 
 ### Changed
