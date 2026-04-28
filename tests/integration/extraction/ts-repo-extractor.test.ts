@@ -218,10 +218,18 @@ test("ts-repo extractor emits one 'use_case' object per exported make<Name> fact
   }
 
   const ids = useCases.map((object) => object.id).sort();
-  // Fixture has src/alpha/use-cases/index.ts with two exported factories
-  // (makeGreet, makeFarewellMessage) and one non-exported (makeInternalHelper)
-  // that must be skipped.
-  assert.deepEqual(ids, ["use_case.farewell-message", "use_case.greet"]);
+  // Fixture has src/alpha/use-cases/index.ts with four exported factories:
+  //   makeGreet              — sync
+  //   makeFarewellMessage    — sync
+  //   makeAsyncOperation     — `export async function` (must match)
+  //   makeHTTPClient         — consecutive caps (must kebab to "http-client")
+  // and one non-exported (makeInternalHelper) that must be skipped.
+  assert.deepEqual(ids, [
+    "use_case.async-operation",
+    "use_case.farewell-message",
+    "use_case.greet",
+    "use_case.http-client",
+  ]);
 
   for (const useCase of useCases) {
     assert.equal(useCase.kind, "fact");
