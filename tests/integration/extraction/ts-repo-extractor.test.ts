@@ -7,6 +7,8 @@ import test from "node:test";
 import { loadProject } from "../../../src/core/config/load-project.js";
 import { tsRepoExtractor } from "../../../src/extraction/extractors/ts-repo/index.js";
 
+import type { Dirent } from "node:fs";
+
 import type { KnowledgeObject, Manifest } from "../../../src/core/protocol/types.js";
 
 const FIXTURE_ROOT = path.resolve("tests/fixtures/ts-tiny-repo");
@@ -296,6 +298,64 @@ test("ts-repo extractor advertises 'port' in produces_types", () => {
   );
 });
 
+test("ts-repo extractor deduplicates port emissions when the same <Name>Port appears in multiple files", async () => {
+  const fakeFs = makeFakeSrcTree({
+    [path.posix.join("src", "alpha", "ports.ts")]:
+      "export interface ClockPort {\n  now(): Date;\n}\n",
+    [path.posix.join("src", "beta", "ports.ts")]:
+      "export interface ClockPort {\n  now(): Date;\n}\n",
+  });
+
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor({ readdir: fakeFs.readdir, readFile: fakeFs.readFile });
+
+  const ports: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: fakeFs.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "port") ports.push(object);
+  }
+
+  const ids = ports.map((object) => object.id);
+  assert.equal(
+    new Set(ids).size,
+    ids.length,
+    `port ids must be unique, got ${JSON.stringify(ids)}`,
+  );
+  assert.deepEqual(ids, ["port.clock"]);
+});
+
+test("ts-repo extractor deduplicates use_case emissions when the same make<Name> appears in multiple files", async () => {
+  const fakeFs = makeFakeSrcTree({
+    [path.posix.join("src", "alpha", "use-cases", "index.ts")]:
+      "export function makeGreet() {\n  return { execute() { return ''; } };\n}\n",
+    [path.posix.join("src", "beta", "use-cases", "index.ts")]:
+      "export function makeGreet() {\n  return { execute() { return ''; } };\n}\n",
+  });
+
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor({ readdir: fakeFs.readdir, readFile: fakeFs.readFile });
+
+  const useCases: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: fakeFs.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "use_case") useCases.push(object);
+  }
+
+  const ids = useCases.map((object) => object.id);
+  assert.equal(
+    new Set(ids).size,
+    ids.length,
+    `use_case ids must be unique, got ${JSON.stringify(ids)}`,
+  );
+  assert.deepEqual(ids, ["use_case.greet"]);
+});
+
 test("ts-repo extractor propagates non-ENOENT readdir failures (e.g. EACCES)", async () => {
   const project = await loadProject(FIXTURE_ROOT);
 
@@ -316,3 +376,68 @@ test("ts-repo extractor propagates non-ENOENT readdir failures (e.g. EACCES)", a
     }
   }, /permission denied|EACCES/);
 });
+
+interface FakeSrcTree {
+  rootDir: string;
+  readdir: (target: string, opts: { withFileTypes: true }) => Promise<Dirent[]>;
+  readFile: (target: string, encoding: "utf8") => Promise<string>;
+}
+
+// Builds a synthetic in-memory src tree from {relativePath: fileContent}.
+// Directory listings are derived; missing paths throw ENOENT. Used to test
+// the extractor against shapes that would be awkward to express on a real
+// filesystem (cross-file duplicate identifier names, etc.).
+function makeFakeSrcTree(files: Record<string, string>): FakeSrcTree {
+  const ROOT = path.join("/", "synthetic-ts-repo-fixture");
+  const fileMap = new Map<string, string>();
+  const dirMap = new Map<string, Map<string, "file" | "dir">>();
+
+  for (const [rel, content] of Object.entries(files)) {
+    const abs = path.join(ROOT, ...rel.split("/"));
+    fileMap.set(abs, content);
+
+    const segments = rel.split("/");
+    let cursor = ROOT;
+    for (let i = 0; i < segments.length - 1; i++) {
+      const segment = segments[i]!;
+      const child = path.join(cursor, segment);
+      if (!dirMap.has(cursor)) dirMap.set(cursor, new Map());
+      dirMap.get(cursor)!.set(segment, "dir");
+      cursor = child;
+    }
+    const fileName = segments[segments.length - 1]!;
+    if (!dirMap.has(cursor)) dirMap.set(cursor, new Map());
+    dirMap.get(cursor)!.set(fileName, "file");
+  }
+
+  // Test fake — only the methods the extractor actually calls (name + isDirectory + isFile)
+  // need realistic behavior. Cast through `unknown` because Dirent has many other methods
+  // (isSymbolicLink, isBlockDevice, ...) that the extractor never invokes.
+  const direntFor = (name: string, kind: "file" | "dir"): Dirent =>
+    ({
+      name,
+      isDirectory: () => kind === "dir",
+      isFile: () => kind === "file",
+      isSymbolicLink: () => false,
+    }) as unknown as Dirent;
+
+  return {
+    rootDir: ROOT,
+    async readdir(target: string, _opts: { withFileTypes: true }): Promise<Dirent[]> {
+      const entries = dirMap.get(target);
+      if (!entries) {
+        const error = Object.assign(new Error(`ENOENT: ${target}`), { code: "ENOENT" });
+        throw error;
+      }
+      return [...entries.entries()].map(([name, kind]) => direntFor(name, kind));
+    },
+    async readFile(target: string, _encoding: "utf8"): Promise<string> {
+      const content = fileMap.get(target);
+      if (content === undefined) {
+        const error = Object.assign(new Error(`ENOENT: ${target}`), { code: "ENOENT" });
+        throw error;
+      }
+      return content;
+    },
+  };
+}
