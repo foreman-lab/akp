@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { rename, readFile, writeFile } from "node:fs/promises";
 
 import { AkpError } from "../core/errors/akp-error.js";
 import { knowledgeObjectSchema } from "../core/protocol/schema.js";
@@ -6,30 +6,44 @@ import { knowledgeObjectSchema } from "../core/protocol/schema.js";
 import type { KnowledgeObject, PackSchema } from "../core/protocol/types.js";
 
 /**
- * Read-side surface over the canonical authored knowledge (today: a JSONL file
- * at `.akp/objects.jsonl`). The interface exists so the build, check, and
- * future refresh flows can depend on a port rather than the concrete reader.
- * A future writeAll method will land alongside the refresh use case in a later
- * patch; this commit ships the read-only slice only.
+ * Read/write surface over the canonical authored knowledge (today: a JSONL
+ * file at `.akp/objects.jsonl`). Build, check, and refresh flows depend on
+ * this port rather than the concrete reader.
  */
 export interface CanonicalStore {
   readAll(): Promise<KnowledgeObject[]>;
+  /**
+   * Replace the canonical object set atomically. Implementations MUST write
+   * the new content to a sibling file and rename, so a partial failure never
+   * leaves the canonical store in a half-written state.
+   */
+  writeAll(objects: KnowledgeObject[]): Promise<void>;
 }
 
 /**
- * Build a CanonicalStore backed by the manifest's JSONL objects file. Validation
- * (per-object schema, schema-pack conformance, relationship target existence)
- * runs inside `readAll`, so consumers always see a verified set.
+ * Build a CanonicalStore backed by the manifest's JSONL objects file. Read
+ * validates per-object schema, schema-pack conformance, and relationship
+ * target existence; write performs an atomic temp-file + rename.
  */
 export function makeJsonlCanonicalStore(objectsPath: string, schema: PackSchema): CanonicalStore {
   return {
     readAll() {
       return readKnowledgeObjects(objectsPath, schema);
     },
+    async writeAll(objects: KnowledgeObject[]): Promise<void> {
+      const tmpPath = `${objectsPath}.tmp`;
+      const content = objects.map((object) => JSON.stringify(object)).join("\n") + "\n";
+      try {
+        await writeFile(tmpPath, content, "utf8");
+        await rename(tmpPath, objectsPath);
+      } catch (error: unknown) {
+        throw new AkpError("AKP_OBJECTS_WRITE_FAILED", `Unable to write ${objectsPath}`, error);
+      }
+    },
   };
 }
 
-function validateObjectAgainstPack(object: KnowledgeObject, schema: PackSchema): void {
+export function validateObjectAgainstPack(object: KnowledgeObject, schema: PackSchema): void {
   const typeDefinition = schema.object_types[object.type];
   if (!typeDefinition) {
     throw new AkpError(
@@ -72,7 +86,7 @@ function validateObjectAgainstPack(object: KnowledgeObject, schema: PackSchema):
   }
 }
 
-function validateRelationshipTargets(objects: KnowledgeObject[]): void {
+export function validateRelationshipTargets(objects: KnowledgeObject[]): void {
   const objectIds = new Set(objects.map((object) => object.id));
 
   for (const object of objects) {

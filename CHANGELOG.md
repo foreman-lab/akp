@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - 2026-04-28
+
+### Added
+
+- `SourceExtractor` port in `src/extraction/source-extractor.ts` — the plug-in surface domain packs implement to populate canonical knowledge from sources. Includes `ExtractorDescriptor`, `SourceExtractorContext`, and an `isOwnedByExtractor` helper.
+- `makeRefresh` use case in `src/extraction/use-cases/refresh.ts` — orchestrates extraction, validation, and identity-based merge: an extractor only replaces canonical objects whose `provenance.generated_by` matches its own id (exact match or `${id}:` prefix); human-authored objects and objects from other extractors are preserved untouched.
+- `defaultExtractors()` registry in `src/extraction/registry.ts` — returns `[]` for now; Phase 3 wires the TypeScript code-repo extractor here.
+- `CanonicalStore.writeAll(objects)` — atomic temp-file + rename write, with `AKP_OBJECTS_WRITE_FAILED` on failure. Implemented on `JsonlCanonicalStore`.
+- CLI verbs: `akp refresh [--extractor <id>] [--dry-run]` and `akp extractors list`.
+- New `AkpError` codes: `AKP_NO_EXTRACTORS_REGISTERED`, `AKP_EXTRACTOR_AMBIGUOUS`, `AKP_EXTRACTOR_UNKNOWN`, `AKP_EXTRACTOR_PRODUCED_INVALID_OBJECT`, `AKP_OBJECTS_WRITE_FAILED`.
+- 7 unit tests in `tests/unit/extraction/refresh.test.ts` covering registry edge cases, identity-based merge, orphan removal, and `--dry-run`.
+- `validateObjectAgainstPack` and `validateRelationshipTargets` are now exported from `src/knowledge/read-objects.ts` so the refresh use case can validate extractor output before writing.
+
+### Fixed
+
+- CLI `--version` output (was hard-coded to `0.1.0-alpha.0` since the original commit and never updated as `package.json` advanced through `alpha.1`–`alpha.4`). Now reports `0.1.0-alpha.5`.
+
+### Internal
+
+- ESLint test override now also disables `@typescript-eslint/require-await` (fake AsyncIterables in test extractors don't await anything).
+
 ## [0.1.0-alpha.4] - 2026-04-28
 
 ### Fixed

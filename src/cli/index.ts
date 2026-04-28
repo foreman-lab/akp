@@ -3,8 +3,12 @@ import { Command } from "commander";
 
 import { buildKnowledgeBase } from "../build/build-knowledge-base.js";
 import { checkKnowledgeBase } from "../check/check-knowledge-base.js";
+import { loadProject } from "../core/config/load-project.js";
 import { AkpError } from "../core/errors/akp-error.js";
+import { defaultExtractors } from "../extraction/registry.js";
+import { makeRefresh } from "../extraction/use-cases/refresh.js";
 import { initAkp } from "../init/init-akp.js";
+import { makeJsonlCanonicalStore } from "../knowledge/read-objects.js";
 import {
   briefKnowledge,
   describeKnowledgeBase,
@@ -13,6 +17,7 @@ import {
   getObject,
   lookupKnowledge,
 } from "../query/query-knowledge-base.js";
+import { SqliteStore } from "../store/sqlite/sqlite-store.js";
 
 import { parsePositiveInt } from "./parse-options.js";
 
@@ -21,7 +26,7 @@ const program = new Command();
 program
   .name("akp")
   .description("Artifact Knowledge Protocol command line tools")
-  .version("0.1.0-alpha.0");
+  .version("0.1.0-alpha.5");
 
 program
   .command("init")
@@ -106,6 +111,50 @@ program
   .description("Summarize freshness status for the local AKP store")
   .action(async () => {
     printJson(await getFreshness());
+  });
+
+program
+  .command("refresh")
+  .description("Re-extract canonical knowledge from sources via a registered extractor")
+  .option(
+    "-e, --extractor <id>",
+    "Extractor id to run (required if multiple extractors are registered)",
+  )
+  .option("--dry-run", "Compute the refresh plan without writing any changes", false)
+  .action(async (options: { extractor?: string; dryRun?: boolean }) => {
+    const project = await loadProject(process.cwd());
+    const canonical = makeJsonlCanonicalStore(project.objectsPath, project.schema);
+    const indexed = new SqliteStore(project.databasePath);
+    indexed.initialize();
+    try {
+      const refresh = makeRefresh({
+        canonical,
+        indexed,
+        extractors: defaultExtractors(),
+        context: {
+          rootDir: project.rootDir,
+          manifest: project.manifest,
+          schema: project.schema,
+        },
+      });
+      const result = await refresh.execute({
+        extractorId: options.extractor,
+        dryRun: options.dryRun ?? false,
+      });
+      printJson(result);
+    } finally {
+      indexed.close();
+    }
+  });
+
+const extractors = program.command("extractors").description("Manage AKP source extractors");
+
+extractors
+  .command("list")
+  .description("List registered AKP source extractors")
+  .action(() => {
+    const list = defaultExtractors().map((extractor) => extractor.describe());
+    printJson(list);
   });
 
 program
