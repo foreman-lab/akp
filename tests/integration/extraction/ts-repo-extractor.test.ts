@@ -253,6 +253,34 @@ test("ts-repo extractor advertises 'use_case' in produces_types", () => {
   );
 });
 
+test("ts-repo extractor attaches a `uses` relationship from each use-case factory to every imported `<Name>Port`", async () => {
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor();
+
+  const useCases: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: project.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "use_case") useCases.push(object);
+  }
+
+  assert.ok(useCases.length > 0, "fixture must yield at least one use_case");
+  for (const useCase of useCases) {
+    const usesPort = useCase.relationships.some(
+      (relationship) =>
+        relationship.type === "uses" &&
+        relationship.category === "dependency" &&
+        relationship.target === "port.clock",
+    );
+    assert.ok(
+      usesPort,
+      `use_case ${useCase.id} must have a uses->port.clock relationship; got ${JSON.stringify(useCase.relationships)}`,
+    );
+  }
+});
+
 test("ts-repo extractor emits one 'port' object per exported `<Name>Port` interface under src/**/*.ts", async () => {
   const project = await loadProject(FIXTURE_ROOT);
   const extractor = tsRepoExtractor();

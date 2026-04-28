@@ -1,5 +1,10 @@
+// Importing `ClockPort` should result in every factory in this file
+// inheriting a `uses --> port.clock` relationship.
+import type { ClockPort } from "../ports.js";
+
 export interface GreetInput {
   name: string;
+  clock?: ClockPort;
 }
 
 export interface GreetUseCase {

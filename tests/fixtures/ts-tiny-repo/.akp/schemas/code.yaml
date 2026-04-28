@@ -20,4 +20,6 @@ object_types:
     required_attributes:
       - interface_name
 
-relationship_types: {}
+relationship_types:
+  uses:
+    category: dependency
