@@ -12,7 +12,7 @@ export default tseslint.config(
       "coverage/**",
       ".akp-local/**",
       "examples/**/.akp-local/**",
-      "tests/fixtures/**/.akp-local/**",
+      "tests/fixtures/**",
     ],
   },
 

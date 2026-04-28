@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
 import { loadProject } from "../../../src/core/config/load-project.js";
 import { tsRepoExtractor } from "../../../src/extraction/extractors/ts-repo/index.js";
 
-import type { KnowledgeObject } from "../../../src/core/protocol/types.js";
+import type { KnowledgeObject, Manifest } from "../../../src/core/protocol/types.js";
 
 const FIXTURE_ROOT = path.resolve("tests/fixtures/ts-tiny-repo");
 
@@ -81,4 +83,57 @@ test("ts-repo extractor sets non-empty module.title and attributes.paths array",
     assert.ok(Array.isArray(paths), `module ${module.id} must have attributes.paths array`);
     assert.ok(paths.length > 0, `module ${module.id} must list at least one path`);
   }
+});
+
+test("ts-repo extractor sets a non-empty attributes.purpose on every emitted module", async () => {
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor();
+
+  const modules: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: project.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "module") {
+      modules.push(object);
+    }
+  }
+
+  assert.ok(modules.length > 0, "fixture should yield at least one module");
+  for (const module of modules) {
+    const purpose = module.attributes["purpose"];
+    assert.equal(
+      typeof purpose,
+      "string",
+      `module ${module.id} must have string attributes.purpose`,
+    );
+    assert.ok(
+      typeof purpose === "string" && purpose.length > 0,
+      `module ${module.id} must have non-empty attributes.purpose`,
+    );
+  }
+});
+
+test("ts-repo extractor returns no objects when <rootDir>/src does not exist", async () => {
+  const emptyRoot = path.join(tmpdir(), `akp-ts-repo-no-src-${Date.now()}-${Math.random()}`);
+  await mkdir(emptyRoot, { recursive: true });
+
+  const project = await loadProject(FIXTURE_ROOT);
+  const manifest: Manifest = {
+    ...project.manifest,
+    artifact: { ...project.manifest.artifact, name: "no-src-fixture" },
+  };
+
+  const extractor = tsRepoExtractor();
+  const objects: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: emptyRoot,
+    manifest,
+    schema: project.schema,
+  })) {
+    objects.push(object);
+  }
+
+  assert.equal(objects.length, 0);
 });

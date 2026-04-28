@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.8] - 2026-04-28
+
+### Added
+
+- Adversarial fixture inputs in `tests/fixtures/ts-tiny-repo/src/`: a hidden directory (`.hidden/`), an underscore-prefixed directory (`_internal/`), and a top-level file (`README.md`). Their presence makes the existing strict-equality test on emitted module ids (`["module.alpha", "module.beta"]`) double as a regression guard for the extractor's directory filters.
+- Explicit test for `attributes.purpose`: every emitted module now has its `purpose` attribute asserted non-empty. Closes the post-hoc fix that landed in `0.1.0-alpha.7` without test coverage.
+- Explicit test for the ENOENT branch: when `<rootDir>/src/` does not exist, the extractor yields zero objects (no error).
+- ESLint `ignores` now includes `tests/fixtures/**` (fixtures are test data, not project source — type-checked rules can't parse stray fixture `.ts` files).
+
+### Internal
+
+- Test count 25 → 27. Phase 3 first-cycle test gaps closed.
+- Honest note for the project's process backlog: this fixup was tests-after, not strict TDD. The earlier "TDD" claim for `0.1.0-alpha.7` was partial — the failing-test-first discipline only held for the initial cycle and slipped during the dogfood-driven `purpose` fix.
+
 ## [0.1.0-alpha.7] - 2026-04-28
 
 ### Added
