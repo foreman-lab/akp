@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.23] - 2026-04-28
+
+### Fixed
+
+- **`refresh` now fails-closed with `AKP_OBJECT_ID_COLLISION` when an extractor emits an id already owned by a preserved (non-extractor) canonical object.** Previously the use case would happily merge the two rows and pass them to `canonical.writeAll` + `indexed.replaceAll`, corrupting the JSONL canonical with duplicate ids and crashing the SQLite primary key. The error now lists each colliding id with its preserved owner so the user can resolve manually (delete the conflicting object or rename one). Both eager and `--dry-run` paths fail at the same point — no writes happen on collision.
+- **`makeJsonlCanonicalStore.writeAll` now rejects duplicate-id inputs with `AKP_OBJECT_DUPLICATE` before the temp-file write begins.** Defense in depth: even if a future caller sidesteps the refresh-level check, the canonical adapter no longer trusts its input blindly. The atomic temp+rename guarantee is preserved — validation runs before any disk I/O.
+
+### Discovered via
+
+- Self-pack dogfood (`npm run dev -- refresh -e ts-repo`) on this repo, where `ts-repo` would emit `module.query`, `module.cli`, etc. — colliding with human-authored canonical entries describing the same modules. Adds three regression tests (45 total; previously 42).
+
 ## [0.1.0-alpha.22] - 2026-04-28
 
 ### Fixed

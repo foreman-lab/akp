@@ -31,6 +31,13 @@ export function makeJsonlCanonicalStore(objectsPath: string, schema: PackSchema)
       return readKnowledgeObjects(objectsPath, schema);
     },
     async writeAll(objects: KnowledgeObject[]): Promise<void> {
+      const seen = new Set<string>();
+      for (const object of objects) {
+        if (seen.has(object.id)) {
+          throw new AppError("AKP_OBJECT_DUPLICATE", `Duplicate AKP object id ${object.id}`);
+        }
+        seen.add(object.id);
+      }
       const tmpPath = `${objectsPath}.tmp`;
       const content = objects.map((object) => JSON.stringify(object)).join("\n") + "\n";
       try {

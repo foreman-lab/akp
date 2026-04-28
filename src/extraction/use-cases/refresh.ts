@@ -71,6 +71,22 @@ export function makeRefresh(deps: RefreshDependencies): RefreshUseCase {
       const extractedIds = new Set(extracted.map((object) => object.id));
       const ownedExistingIds = new Set(ownedExisting.map((object) => object.id));
 
+      const otherById = new Map(otherExisting.map((object) => [object.id, object] as const));
+      const collisions = extracted
+        .filter((object) => otherById.has(object.id))
+        .map((object) => ({
+          id: object.id,
+          preserved_owner: otherById.get(object.id)!.provenance.generated_by,
+          extractor_id: descriptor.id,
+        }));
+      if (collisions.length > 0) {
+        throw new AppError(
+          "AKP_OBJECT_ID_COLLISION",
+          `Extractor ${descriptor.id} emitted ${collisions.length} id(s) already owned by other (preserved) objects. Resolve by deleting the conflicting canonical object or renaming one of them.`,
+          { collisions },
+        );
+      }
+
       const added_count = extracted.filter((object) => !ownedExistingIds.has(object.id)).length;
       const replaced_count = extracted.length - added_count;
       const removed_count = ownedExisting.filter((object) => !extractedIds.has(object.id)).length;
