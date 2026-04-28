@@ -31,3 +31,27 @@ test("CLI rejects invalid lookup limits", async () => {
     );
   });
 });
+
+test("CLI: akp extractors list returns an empty array when no extractors are registered", async () => {
+  await withTempFixture("code-repo", async (projectRoot) => {
+    const cliPath = path.resolve("dist-tests/src/cli/index.js");
+    const { stdout } = await execFileAsync(process.execPath, [cliPath, "extractors", "list"], {
+      cwd: projectRoot,
+    });
+    const parsed: unknown = JSON.parse(stdout);
+    assert.deepEqual(parsed, []);
+  });
+});
+
+test("CLI: akp refresh exits with AKP_NO_EXTRACTORS_REGISTERED when no extractors are wired", async () => {
+  await withTempFixture("code-repo", async (projectRoot) => {
+    const cliPath = path.resolve("dist-tests/src/cli/index.js");
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [cliPath, "refresh"], {
+          cwd: projectRoot,
+        }),
+      /AKP_NO_EXTRACTORS_REGISTERED/,
+    );
+  });
+});

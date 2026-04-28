@@ -199,6 +199,40 @@ test("refresh removes own orphans (objects no longer emitted by the extractor)",
   }
 });
 
+test("refresh fails with AKP_EXTRACTOR_PRODUCED_INVALID_OBJECT when extractor yields a malformed object", async () => {
+  const env = await setupEnv();
+  try {
+    const malformed: SourceExtractor = {
+      describe() {
+        return { id: "broken", description: "yields garbage", produces_types: ["module"] };
+      },
+      async *extract() {
+        yield { not: "a knowledge object" } as unknown as KnowledgeObject;
+      },
+    };
+    const refresh = makeRefresh({
+      canonical: env.canonical,
+      indexed: env.indexed,
+      extractors: [malformed],
+      context: { rootDir: env.rootDir, manifest, schema },
+    });
+
+    await assert.rejects(
+      () => refresh.execute(),
+      (error) => {
+        assert.ok(error instanceof AkpError);
+        assert.equal(error.code, "AKP_EXTRACTOR_PRODUCED_INVALID_OBJECT");
+        return true;
+      },
+    );
+
+    const canonicalAfter = await env.canonical.readAll();
+    assert.equal(canonicalAfter.length, 0);
+  } finally {
+    env.indexed.close();
+  }
+});
+
 test("refresh --dry-run computes counts but writes nothing", async () => {
   const env = await setupEnv([object("module.original", { generatedBy: "ts-repo" })]);
   try {

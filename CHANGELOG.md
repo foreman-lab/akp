@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.6] - 2026-04-28
+
+### Added
+
+- Test for `AKP_EXTRACTOR_PRODUCED_INVALID_OBJECT`: malformed-extractor case in `tests/unit/extraction/refresh.test.ts` confirms refresh aborts before any write when an extractor yields a non-conforming object.
+- Test for `AKP_OBJECTS_WRITE_FAILED`: unwritable target path in `tests/unit/store/sqlite-store.test.ts` exercises the atomic-write failure branch on `JsonlCanonicalStore.writeAll`.
+- E2E tests in `tests/e2e/cli/cli.test.ts` for the new CLI surface: `akp extractors list` returns `[]`, and `akp refresh` exits non-zero with `AKP_NO_EXTRACTORS_REGISTERED` when no extractors are wired.
+
+### Internal
+
+- Fills the test-coverage gap from `0.1.0-alpha.5`: every error code introduced for the refresh surface (`AKP_EXTRACTOR_*`, `AKP_OBJECTS_WRITE_FAILED`) now has at least one test, and the two new CLI verbs are covered end-to-end. Test count 17 → 21.
+
 ## [0.1.0-alpha.5] - 2026-04-28
 
 ### Added

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { AkpError } from "../../../src/core/errors/akp-error.js";
 import { makeJsonlCanonicalStore } from "../../../src/knowledge/read-objects.js";
 import { SqliteStore } from "../../../src/store/sqlite/sqlite-store.js";
 
@@ -92,6 +93,25 @@ test("deleteMany removes the object, its relationships in both directions, and F
   } finally {
     store.close();
   }
+});
+
+test("makeJsonlCanonicalStore.writeAll throws AKP_OBJECTS_WRITE_FAILED when the target path is unwritable", async () => {
+  const unwritablePath = path.join(
+    tmpdir(),
+    `akp-canonical-missing-${Date.now()}-${Math.random()}`,
+    "nonexistent-parent",
+    "objects.jsonl",
+  );
+  const canonical = makeJsonlCanonicalStore(unwritablePath, schema);
+
+  await assert.rejects(
+    () => canonical.writeAll([object("module.alpha")]),
+    (error) => {
+      assert.ok(error instanceof AkpError);
+      assert.equal(error.code, "AKP_OBJECTS_WRITE_FAILED");
+      return true;
+    },
+  );
 });
 
 test("makeJsonlCanonicalStore.readAll delegates to the JSONL reader", async () => {
