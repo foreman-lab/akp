@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.26] - 2026-04-28
+
+### Fixed
+
+- **`ts-repo` extractor now matches `export async function make<Name>` factories.** The regex previously required the literal token `function` immediately after `export`, silently skipping async factories — an idiomatic shape for I/O-touching use cases. Pattern updated to `/^export\s+(?:async\s+)?function\s+make([A-Z]\w*)\b/gm`.
+- Stale JSDoc on `tsRepoExtractor` listed `use_case` under "future TDD cycles" even though it shipped in `0.1.0-alpha.24`. Comment now reflects the three currently-emitted types and trims `use_case` from the future-work list.
+
+### Internal
+
+- Reviewer-pass follow-up on the alpha.24 cycle. Adds two new fixture factories: `makeAsyncOperation` (covers the regex fix) and `makeHTTPClient` (locks in already-correct consecutive-caps `kebabCase` behavior). 47/47 tests still pass.
+
 ## [0.1.0-alpha.25] - 2026-04-28
 
 ### Changed

@@ -29,8 +29,10 @@ export interface TsRepoDependencies {
  *  - one `module` object per top-level directory under `<rootDir>/src/`
  *  - one `command` object per `program.command("...")` call in
  *    `<rootDir>/src/cli/index.ts` (commander-style CLI declarations)
+ *  - one `use_case` object per exported `make<Name>` factory under
+ *    `<rootDir>/src/**\/use-cases/*.ts`
  *
- * Future TDD cycles add `function`, `class`, `port`, `use_case` and the
+ * Future TDD cycles add `function`, `class`, `port`, and the
  * corresponding relationships.
  */
 export function tsRepoExtractor(deps: TsRepoDependencies = {}): SourceExtractor {
@@ -226,7 +228,7 @@ async function* extractUseCases(
   await collectUseCaseFiles(srcDir, readdir, files);
 
   // Function-local regex avoids global-RegExp lastIndex carry-over.
-  const factoryPattern = /^export\s+function\s+make([A-Z]\w*)\b/gm;
+  const factoryPattern = /^export\s+(?:async\s+)?function\s+make([A-Z]\w*)\b/gm;
   const now = new Date().toISOString();
 
   for (const filePath of files.sort()) {
