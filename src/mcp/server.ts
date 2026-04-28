@@ -9,7 +9,7 @@ export async function startMcpServer(): Promise<void> {
 
   const server = new McpServer({
     name: "akp",
-    version: "0.1.0-alpha.14",
+    version: "0.1.0-alpha.15",
   });
 
   server.registerTool(

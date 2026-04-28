@@ -1,3 +1,4 @@
+import { makeBuildKnowledgeBase, makeCheckKnowledgeBase } from "../build/use-cases/index.js";
 import { loadProject } from "../core/config/load-project.js";
 import { defaultExtractors } from "../extraction/registry.js";
 import { makeRefresh } from "../extraction/use-cases/refresh.js";
@@ -13,6 +14,10 @@ import {
 import { ensureStoreBuilt } from "../store/ensure-store-built.js";
 import { SqliteStore } from "../store/sqlite/sqlite-store.js";
 
+import type {
+  BuildKnowledgeBaseUseCase,
+  CheckKnowledgeBaseUseCase,
+} from "../build/use-cases/index.js";
 import type { ProjectContext } from "../core/protocol/types.js";
 import type { SourceExtractor } from "../extraction/source-extractor.js";
 import type { RefreshUseCase } from "../extraction/use-cases/refresh.js";
@@ -37,6 +42,8 @@ export interface UseCases {
   neighbors: GetNeighborsUseCase;
   freshness: GetFreshnessUseCase;
   brief: BriefKnowledgeUseCase;
+  build: BuildKnowledgeBaseUseCase;
+  check: CheckKnowledgeBaseUseCase;
   refresh: RefreshUseCase;
 }
 
@@ -109,6 +116,8 @@ export async function buildContainer(
     neighbors: makeGetNeighbors(indexed),
     freshness: makeGetFreshness(project, indexed),
     brief: makeBriefKnowledge(indexed),
+    build: makeBuildKnowledgeBase({ project, canonical, indexed }),
+    check: makeCheckKnowledgeBase({ project, canonical }),
     refresh,
   };
 

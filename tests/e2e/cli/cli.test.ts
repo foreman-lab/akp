@@ -4,14 +4,19 @@ import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 
-import { buildKnowledgeBase } from "../../../src/build/build-knowledge-base.js";
+import { buildContainer } from "../../../src/runtime/build-container.js";
 import { withTempFixture } from "../../helpers/temp-project.js";
 
 const execFileAsync = promisify(execFile);
 
 test("CLI rejects invalid lookup limits", async () => {
   await withTempFixture("code-repo", async (projectRoot) => {
-    await buildKnowledgeBase(projectRoot);
+    const container = await buildContainer(projectRoot);
+    try {
+      await container.useCases.build.execute();
+    } finally {
+      container.dispose();
+    }
     const cliPath = path.resolve("dist-tests/src/cli/index.js");
 
     await assert.rejects(

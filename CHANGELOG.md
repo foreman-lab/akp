@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.15] - 2026-04-28
+
+### Added
+
+- `makeBuildKnowledgeBase({project, canonical, indexed})` and `makeCheckKnowledgeBase({project, canonical})` factories in `src/build/use-cases/index.ts`. Build orchestrates `canonical.readAll()` → `indexed.replaceAll()` → `indexed.stats()`. Check is the same minus the indexed write. Both result types exported.
+- 2 fakes-based unit tests in `tests/unit/build/use-cases.test.ts` (TDD red→green: TS2307 was the failing-import red signal).
+- `Container.useCases.build` and `Container.useCases.check`.
+
+### Changed
+
+- `akp build` and `akp check` actions migrate to the container + use-case pattern (same as the read verbs in `0.1.0-alpha.14`).
+- `tests/integration/build/build-knowledge-base.test.ts` and `tests/e2e/cli/cli.test.ts` no longer import the legacy free function — both now use `buildContainer` and call `useCases.build.execute()`.
+
+### Removed
+
+- `src/build/build-knowledge-base.ts` (replaced by `makeBuildKnowledgeBase`).
+- `src/check/check-knowledge-base.ts` (replaced by `makeCheckKnowledgeBase`). The empty `src/check/` directory is gone — check now lives under `src/build/use-cases/` since the two operations share the same dep set minus the indexed write.
+
+### Internal
+
+- This is **step 6** (the final step) of the pre-cycle-4 hex-architecture refactor. Every CLI verb except `init` (deferred — it doesn't need ports today) now flows through the composition root. Test count 37 → 39.
+- After this commit the project has a single uniform pattern: ports declared next to adapters, use cases injecting ports as deps, a single composition root, two thin inbound adapters (CLI + MCP) consuming use cases via the container.
+
 ## [0.1.0-alpha.14] - 2026-04-28
 
 ### Added

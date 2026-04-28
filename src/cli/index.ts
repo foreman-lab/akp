@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 
-import { buildKnowledgeBase } from "../build/build-knowledge-base.js";
-import { checkKnowledgeBase } from "../check/check-knowledge-base.js";
 import { AkpError } from "../core/errors/akp-error.js";
 import { defaultExtractors } from "../extraction/registry.js";
 import { initAkp } from "../init/init-akp.js";
@@ -15,7 +13,7 @@ const program = new Command();
 program
   .name("akp")
   .description("Artifact Knowledge Protocol command line tools")
-  .version("0.1.0-alpha.14");
+  .version("0.1.0-alpha.15");
 
 program
   .command("init")
@@ -28,14 +26,24 @@ program
   .command("build")
   .description("Compile .akp objects into the local AKP store")
   .action(async () => {
-    printJson(await buildKnowledgeBase());
+    const container = await buildContainer(process.cwd());
+    try {
+      printJson(await container.useCases.build.execute());
+    } finally {
+      container.dispose();
+    }
   });
 
 program
   .command("check")
   .description("Validate the AKP manifest, schema, and objects")
   .action(async () => {
-    printJson(await checkKnowledgeBase());
+    const container = await buildContainer(process.cwd());
+    try {
+      printJson(await container.useCases.check.execute());
+    } finally {
+      container.dispose();
+    }
   });
 
 program
