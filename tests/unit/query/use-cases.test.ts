@@ -9,85 +9,9 @@ import {
   makeGetObject,
   makeLookupKnowledge,
 } from "../../../src/query/use-cases/index.js";
+import { fakeObject, makeFakeIndexed, makeFakeProject } from "../../helpers/fakes.js";
 
-import type {
-  KnowledgeObject,
-  PackSchema,
-  ProjectContext,
-} from "../../../src/core/protocol/types.js";
-import type {
-  IndexedStore,
-  LookupResult,
-  Neighbor,
-  StoreStats,
-} from "../../../src/store/sqlite/sqlite-store.js";
-
-function makeFakeProject(): ProjectContext {
-  return {
-    rootDir: "/test",
-    akpDir: "/test/.akp",
-    localDir: "/test/.akp-local",
-    manifestPath: "/test/.akp/manifest.yaml",
-    schemaPath: "/test/.akp/schemas/code.yaml",
-    objectsPath: "/test/.akp/objects.jsonl",
-    databasePath: "/test/.akp-local/akp.sqlite",
-    manifest: {
-      version: "0.1",
-      artifact: { name: "test-artifact", kind: "software_repo" },
-      schema: "schemas/code.yaml",
-      security: { default_classification: "internal", default_exposure: "committed" },
-    },
-    schema: makeSchema(),
-  };
-}
-
-function makeSchema(): PackSchema {
-  return {
-    object_types: { module: { kind: "fact" } },
-    relationship_types: { uses: { category: "dependency" } },
-  };
-}
-
-function makeFakeIndexed(overrides: Partial<IndexedStore> = {}): IndexedStore {
-  const noop = () => {
-    /* fake */
-  };
-  const base: IndexedStore = {
-    initialize: noop,
-    upsertMany: noop,
-    deleteMany: noop,
-    replaceAll: noop,
-    getObject: () => null,
-    lookup: () => [],
-    neighbors: () => [],
-    stats: (): StoreStats => ({ object_count: 0, relationship_count: 0, stale_count: 0 }),
-    close: noop,
-  };
-  return { ...base, ...overrides };
-}
-
-function fakeObject(id: string): KnowledgeObject {
-  return {
-    id,
-    type: "module",
-    kind: "fact",
-    title: id,
-    summary: "test",
-    attributes: {},
-    relationships: [],
-    sources: [],
-    classification: "internal",
-    exposure: "committed",
-    provenance: {
-      generated_by: "human:test",
-      generated_at: "2026-04-27T00:00:00.000Z",
-      confidence: "human-authored",
-      verified_against: [],
-    },
-    freshness: { last_verified: "2026-04-27T00:00:00.000Z", status: "fresh" },
-    review_state: "accepted",
-  };
-}
+import type { LookupResult, Neighbor } from "../../../src/store/sqlite/sqlite-store.js";
 
 test("describe use case returns artifact + version + security + types from project context", () => {
   const project = makeFakeProject();

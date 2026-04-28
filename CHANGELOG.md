@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.19] - 2026-04-28
+
+### Added
+
+- `tests/helpers/fakes.ts` — shared in-memory test fakes consolidating `makeFakeProject`, `makeFakeSchema`, `makeFakeIndexed`, `makeFakeCanonical`, `fakeObject` from across the unit test suite. All synthetic — uses literal absolute path `/synthetic-akp-test-fixture` that never resolves to a real filesystem location and fixed ISO 8601 dates `2026-04-27T00:00:00.000Z`.
+
+### Changed
+
+- `tests/unit/query/use-cases.test.ts` and `tests/unit/build/use-cases.test.ts` now import the shared fakes instead of defining local copies. `tests/unit/extraction/refresh.test.ts` and `tests/unit/store/sqlite-store.test.ts` keep their existing local helpers — they exercise real adapters (`SqliteStore` against tmp files) and don't fit the fake shape.
+- `src/extraction/extractors/ts-repo/index.ts` switches from a module-scope global-flag regex (`COMMAND_PATTERN.exec` loop) to a function-local regex with `String.prototype.matchAll`. Removes a latent footgun: stateful `lastIndex` carrying across calls if iteration ever exits early.
+
+### Internal
+
+- This commit closes the Tier 1+2 cleanup batch from the typescript-reviewer pass on the hex refactor. **Skipped from the original plan:** the SqliteStore "constructor doesn't open SQLite" refactor — re-evaluated as busywork without the deferred `buildIntrospectionContext` variant; the constructor-side-effect concern only matters in code paths that don't exist yet.
+- Test count unchanged at 42/42; both consolidation and `matchAll` are pure refactors with characterization tests carrying the load.
+
 ## [0.1.0-alpha.18] - 2026-04-28
 
 ### Fixed

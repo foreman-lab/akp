@@ -63,7 +63,6 @@ async function defaultReadFile(pathArg: string, encoding: "utf8"): Promise<strin
   return fsReadFile(pathArg, encoding);
 }
 
-const COMMAND_PATTERN = /\bprogram\s*\.\s*command\s*\(\s*["']([^"']+)["']/g;
 const CLI_FILE_RELATIVE = path.join("src", "cli", "index.ts");
 
 async function* extractCommands(
@@ -83,10 +82,13 @@ async function* extractCommands(
     throw error;
   }
 
+  // Function-local regex avoids module-scope state on the global RegExp's
+  // `lastIndex`. matchAll returns a fresh iterator per call.
+  const commandPattern = /\bprogram\s*\.\s*command\s*\(\s*["']([^"']+)["']/g;
+
   const now = new Date().toISOString();
   const seen = new Set<string>();
-  let match: RegExpExecArray | null;
-  while ((match = COMMAND_PATTERN.exec(content)) !== null) {
+  for (const match of content.matchAll(commandPattern)) {
     const captured = match[1];
     if (captured === undefined) {
       continue;
