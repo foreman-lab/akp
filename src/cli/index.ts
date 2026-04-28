@@ -16,7 +16,7 @@ const program = new Command();
 program
   .name("akp")
   .description("Artifact Knowledge Protocol command line tools")
-  .version("0.1.0-alpha.29");
+  .version("0.1.0-alpha.30");
 
 program
   .command("init")

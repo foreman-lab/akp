@@ -261,7 +261,10 @@ function extractImportedPortTargets(content: string): string[] {
   for (const match of content.matchAll(importPattern)) {
     const inside = match[1]!;
     for (const raw of inside.split(",")) {
-      const symbol = raw.replace(/^\s*type\s+/, "").trim();
+      const symbol = raw
+        .replace(/^\s*type\s+/, "") // drop leading inline `type` modifier
+        .replace(/\s+as\s+\w+\s*$/, "") // drop trailing `as Alias` clause
+        .trim();
       const portMatch = /^(\w+)Port$/.exec(symbol);
       if (portMatch) {
         targets.add(`port.${kebabCase(portMatch[1]!)}`);

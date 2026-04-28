@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.30] - 2026-04-28
+
+### Fixed
+
+- **`extractImportedPortTargets` now recognizes aliased port imports** (`import { LoggerPort as Logger } from "..."`). The per-member regex `^(\w+)Port$` previously failed against the aliased form because the trailing ` as Logger` clause broke the anchor — silently dropping the port. The pre-match cleanup now strips ` as <Name>` in addition to the leading `type ` modifier.
+
+### Internal
+
+- Reviewer-pass follow-up. RED (`bacb481`) → GREEN (this commit). 53/53 tests pass; new fake-fs test pins the alias case so future changes can't regress it. The remaining false-negative case from the reviewer pass — `import Default, { BarPort } from "..."` — is left as documented backlog (no occurrence in the current codebase).
+
 ## [0.1.0-alpha.29] - 2026-04-28
 
 ### Added
