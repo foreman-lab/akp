@@ -9,5 +9,10 @@ object_types:
     description: CLI command declared via commander's program.command(...).
     required_attributes:
       - command
+  use_case:
+    kind: fact
+    description: Application use case factory (`make<Name>`) under src/**/use-cases/.
+    required_attributes:
+      - factory
 
 relationship_types: {}

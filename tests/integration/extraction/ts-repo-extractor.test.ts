@@ -202,6 +202,48 @@ test("ts-repo extractor emits one 'command' object per program.command(...) call
   }
 });
 
+test("ts-repo extractor emits one 'use_case' object per exported make<Name> factory under src/**/use-cases/*.ts", async () => {
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor();
+
+  const useCases: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: project.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "use_case") {
+      useCases.push(object);
+    }
+  }
+
+  const ids = useCases.map((object) => object.id).sort();
+  // Fixture has src/alpha/use-cases/index.ts with two exported factories
+  // (makeGreet, makeFarewellMessage) and one non-exported (makeInternalHelper)
+  // that must be skipped.
+  assert.deepEqual(ids, ["use_case.farewell-message", "use_case.greet"]);
+
+  for (const useCase of useCases) {
+    assert.equal(useCase.kind, "fact");
+    assert.ok(
+      useCase.provenance.generated_by === "ts-repo" ||
+        useCase.provenance.generated_by.startsWith("ts-repo:"),
+    );
+    assert.equal(useCase.provenance.confidence, "mechanical");
+    const factory = useCase.attributes["factory"];
+    assert.equal(typeof factory, "string");
+    assert.ok(typeof factory === "string" && factory.startsWith("make"));
+  }
+});
+
+test("ts-repo extractor advertises 'use_case' in produces_types", () => {
+  const descriptor = tsRepoExtractor().describe();
+  assert.ok(
+    descriptor.produces_types.includes("use_case"),
+    `produces_types must include 'use_case', got ${JSON.stringify(descriptor.produces_types)}`,
+  );
+});
+
 test("ts-repo extractor propagates non-ENOENT readdir failures (e.g. EACCES)", async () => {
   const project = await loadProject(FIXTURE_ROOT);
 
