@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.17] - 2026-04-28
+
+### Added
+
+- **`init` CLI verb migrated to the use-case + port pattern.** The last legacy free-function verb is gone. New `FileSystemPort` interface in `src/init/use-cases/index.ts` (`mkdir` + `writeFile`); `makeInitAkp(fs)` factory consumes the port. Production adapter `nodeFileSystem()` in `src/init/adapters/node-fs.ts` delegates to `node:fs/promises`.
+- 3 unit tests in `tests/unit/init/use-cases.test.ts` exercising `init` against an in-memory `FakeFileSystem` — **zero production filesystem access**. Tests run against the literal synthetic path `/synthetic-akp-init-fixture` which never resolves to a real fs location.
+
+### Changed
+
+- `akp init` CLI action no longer calls a free function; it constructs the use case with the production `FileSystemPort` adapter and executes against `path.resolve(process.cwd())`.
+
+### Removed
+
+- `src/init/init-akp.ts` — the legacy free function with direct `mkdir`/`writeFile` calls.
+
+### Internal
+
+- **First strict-TDD pair commit on the project**, applying the rule adopted in `0.1.0-alpha.16`: the failing test commit (`df09ee7`) lands separately from the impl commit. Red is now auditable in the commit graph (`npm run check` against `df09ee7` shows TS2307; same against this commit shows green). Test count 39 → 42.
+- Every CLI verb now flows through either `buildContainer` (for ProjectContext-bound verbs) or a use-case + port adapter (for `init`). No verb constructs adapters inline anymore.
+
 ## [0.1.0-alpha.16] - 2026-04-28
 
 ### Fixed

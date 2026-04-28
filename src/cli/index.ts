@@ -1,9 +1,12 @@
 #!/usr/bin/env node
+import path from "node:path";
+
 import { Command } from "commander";
 
 import { AkpError } from "../core/errors/akp-error.js";
 import { defaultExtractors } from "../extraction/registry.js";
-import { initAkp } from "../init/init-akp.js";
+import { nodeFileSystem } from "../init/adapters/node-fs.js";
+import { makeInitAkp } from "../init/use-cases/index.js";
 import { buildContainer } from "../runtime/build-container.js";
 
 import { parsePositiveInt } from "./parse-options.js";
@@ -13,13 +16,15 @@ const program = new Command();
 program
   .name("akp")
   .description("Artifact Knowledge Protocol command line tools")
-  .version("0.1.0-alpha.16");
+  .version("0.1.0-alpha.17");
 
 program
   .command("init")
   .description("Create a starter .akp knowledge-base definition")
   .action(async () => {
-    printJson(await initAkp());
+    const init = makeInitAkp(nodeFileSystem());
+    const result = await init.execute({ rootDir: path.resolve(process.cwd()) });
+    printJson(result);
   });
 
 program
