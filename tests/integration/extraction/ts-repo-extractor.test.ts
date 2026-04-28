@@ -354,6 +354,31 @@ test("ts-repo extractor deduplicates port emissions when the same <Name>Port app
   assert.deepEqual(ids, ["port.clock"]);
 });
 
+test("ts-repo extractor recognizes aliased port imports (`import { FooPort as Foo }`)", async () => {
+  const fakeFs = makeFakeSrcTree({
+    [path.posix.join("src", "alpha", "use-cases", "index.ts")]:
+      'import type { ClockPort, LoggerPort as Logger } from "../ports.js";\n' +
+      "export function makeGreet() {\n  return { execute() { return ''; } };\n}\n",
+  });
+
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor({ readdir: fakeFs.readdir, readFile: fakeFs.readFile });
+
+  const useCases: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: fakeFs.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "use_case") useCases.push(object);
+  }
+
+  assert.equal(useCases.length, 1);
+  const targets = useCases[0]!.relationships.map((relationship) => relationship.target).sort();
+  // Both ports must be captured — the alias on LoggerPort must not hide it.
+  assert.deepEqual(targets, ["port.clock", "port.logger"]);
+});
+
 test("ts-repo extractor deduplicates use_case emissions when the same make<Name> appears in multiple files", async () => {
   const fakeFs = makeFakeSrcTree({
     [path.posix.join("src", "alpha", "use-cases", "index.ts")]:
