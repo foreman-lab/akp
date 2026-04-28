@@ -58,6 +58,11 @@ export interface Container {
   indexed: IndexedStore;
   extractors: readonly SourceExtractor[];
   useCases: UseCases;
+  /**
+   * Releases the container's resources (closes the SQLite handle).
+   * Idempotent — safe to call multiple times. Subsequent calls are
+   * no-ops once the handle has been closed.
+   */
   dispose(): void;
 }
 

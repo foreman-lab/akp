@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.16] - 2026-04-28
+
+### Fixed
+
+- **`CLAUDE.md` Architecture section was stale yet again** — third occurrence of this drift pattern (caught at alpha.2 for kysely, alpha.4 + alpha.7 for ports, now alpha.16 for the use-case migration). The Operation Surface paragraph still claimed verbs map to `src/check/` and a `query/` module of free functions; both were removed in the alpha.14/alpha.15 hex refactor. Now describes the actual shape: thin CLI + MCP inbound adapters → `buildContainer` → use cases.
+- Added a JSDoc note on `Container.dispose()` documenting that it is idempotent.
+- Added a comment in `src/mcp/server.ts` explaining that `transport.onclose` only fires on a clean protocol shutdown — abrupt termination relies on OS handle reclamation, which better-sqlite3 in WAL mode recovers from cleanly.
+
+### Internal
+
+- Driven by an independent typescript-reviewer pass on the alpha.13/14/15 hex refactor commits. Reviewer also flagged: (a) `describe`/`check` open SQLite when they don't need it (deferred — needs a `buildIntrospectionContext` variant; substantive enough for its own cycle); (b) the `briefKnowledge` summary regex `/Found 2/` is too loose to catch format regressions (logged for a docs/tightening pass).
+- **Process improvement adopted for future strict-TDD claims:** to make red→green sequencing auditable from the commit graph, future TDD cycles should split into a test-only commit and an impl-only commit. The reviewer correctly pointed out that landing both in one commit makes the "TS2307 was the red signal" claim unverifiable from outside the working session.
+
 ## [0.1.0-alpha.15] - 2026-04-28
 
 ### Added
