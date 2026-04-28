@@ -21,11 +21,35 @@ export interface Neighbor {
   };
 }
 
+export interface StoreStats {
+  object_count: number;
+  relationship_count: number;
+  stale_count: number;
+}
+
+/**
+ * Read/write surface AKP uses against derived storage (FTS, graph traversal,
+ * fast id lookup). Today there is one implementation (SqliteStore); the
+ * interface exists so future extractor / refresh flows can write incremental
+ * updates without coupling to better-sqlite3 specifics.
+ */
+export interface IndexedStore {
+  initialize(): void;
+  upsertMany(objects: KnowledgeObject[]): void;
+  deleteMany(ids: string[]): void;
+  replaceAll(objects: KnowledgeObject[]): void;
+  getObject(id: string): KnowledgeObject | null;
+  lookup(intent: string, limit: number): LookupResult[];
+  neighbors(id: string, depth?: number, limit?: number): Neighbor[];
+  stats(): StoreStats;
+  close(): void;
+}
+
 interface ObjectRow {
   object_json: string;
 }
 
-export class SqliteStore {
+export class SqliteStore implements IndexedStore {
   private readonly db: Database.Database;
 
   constructor(databasePath: string) {
@@ -142,6 +166,112 @@ export class SqliteStore {
     transaction(objects);
   }
 
+  upsertMany(objects: KnowledgeObject[]): void {
+    if (objects.length === 0) {
+      return;
+    }
+
+    const transaction = this.db.transaction((items: KnowledgeObject[]) => {
+      const deleteOutgoing = this.db.prepare("DELETE FROM relationships WHERE source_id = ?");
+      const deleteFts = this.db.prepare("DELETE FROM object_fts WHERE id = ?");
+
+      const upsertObject = this.db.prepare(`
+        INSERT INTO objects (
+          id, type, kind, title, summary, classification, exposure,
+          review_state, freshness_status, object_json
+        ) VALUES (
+          @id, @type, @kind, @title, @summary, @classification, @exposure,
+          @review_state, @freshness_status, @object_json
+        )
+        ON CONFLICT(id) DO UPDATE SET
+          type = excluded.type,
+          kind = excluded.kind,
+          title = excluded.title,
+          summary = excluded.summary,
+          classification = excluded.classification,
+          exposure = excluded.exposure,
+          review_state = excluded.review_state,
+          freshness_status = excluded.freshness_status,
+          object_json = excluded.object_json
+      `);
+
+      const insertFts = this.db.prepare(`
+        INSERT INTO object_fts (id, title, summary, type, kind, attributes)
+        VALUES (@id, @title, @summary, @type, @kind, @attributes)
+      `);
+
+      const insertRelationship = this.db.prepare(`
+        INSERT INTO relationships (source_id, type, category, target_id, relationship_json)
+        VALUES (@source_id, @type, @category, @target_id, @relationship_json)
+      `);
+
+      for (const object of items) {
+        deleteOutgoing.run(object.id);
+        deleteFts.run(object.id);
+
+        upsertObject.run({
+          id: object.id,
+          type: object.type,
+          kind: object.kind,
+          title: object.title,
+          summary: object.summary,
+          classification: object.classification,
+          exposure: object.exposure,
+          review_state: object.review_state,
+          freshness_status: object.freshness.status,
+          object_json: JSON.stringify(object),
+        });
+
+        insertFts.run({
+          id: object.id,
+          title: object.title,
+          summary: object.summary,
+          type: object.type,
+          kind: object.kind,
+          attributes: JSON.stringify(object.attributes),
+        });
+
+        for (const relationship of object.relationships) {
+          insertRelationship.run({
+            source_id: object.id,
+            type: relationship.type,
+            category: relationship.category,
+            target_id: relationship.target,
+            relationship_json: JSON.stringify(relationship),
+          });
+        }
+      }
+
+      this.recordAuditEvent("upsert_many", { object_count: items.length });
+    });
+
+    transaction(objects);
+  }
+
+  deleteMany(ids: string[]): void {
+    if (ids.length === 0) {
+      return;
+    }
+
+    const transaction = this.db.transaction((items: string[]) => {
+      const deleteOutgoing = this.db.prepare("DELETE FROM relationships WHERE source_id = ?");
+      const deleteIncoming = this.db.prepare("DELETE FROM relationships WHERE target_id = ?");
+      const deleteFts = this.db.prepare("DELETE FROM object_fts WHERE id = ?");
+      const deleteObject = this.db.prepare("DELETE FROM objects WHERE id = ?");
+
+      for (const id of items) {
+        deleteOutgoing.run(id);
+        deleteIncoming.run(id);
+        deleteFts.run(id);
+        deleteObject.run(id);
+      }
+
+      this.recordAuditEvent("delete_many", { id_count: items.length });
+    });
+
+    transaction(ids);
+  }
+
   getObject(id: string): KnowledgeObject | null {
     const row = this.db.prepare("SELECT object_json FROM objects WHERE id = ?").get(id) as
       | ObjectRow
@@ -212,7 +342,7 @@ export class SqliteStore {
     ];
   }
 
-  stats(): { object_count: number; relationship_count: number; stale_count: number } {
+  stats(): StoreStats {
     const objectCount = this.db.prepare("SELECT COUNT(*) AS count FROM objects").get() as {
       count: number;
     };

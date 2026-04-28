@@ -5,6 +5,30 @@ import { knowledgeObjectSchema } from "../core/protocol/schema.js";
 
 import type { KnowledgeObject, PackSchema } from "../core/protocol/types.js";
 
+/**
+ * Read-side surface over the canonical authored knowledge (today: a JSONL file
+ * at `.akp/objects.jsonl`). The interface exists so the build, check, and
+ * future refresh flows can depend on a port rather than the concrete reader.
+ * A future writeAll method will land alongside the refresh use case in a later
+ * patch; this commit ships the read-only slice only.
+ */
+export interface CanonicalStore {
+  readAll(): Promise<KnowledgeObject[]>;
+}
+
+/**
+ * Build a CanonicalStore backed by the manifest's JSONL objects file. Validation
+ * (per-object schema, schema-pack conformance, relationship target existence)
+ * runs inside `readAll`, so consumers always see a verified set.
+ */
+export function makeJsonlCanonicalStore(objectsPath: string, schema: PackSchema): CanonicalStore {
+  return {
+    readAll() {
+      return readKnowledgeObjects(objectsPath, schema);
+    },
+  };
+}
+
 function validateObjectAgainstPack(object: KnowledgeObject, schema: PackSchema): void {
   const typeDefinition = schema.object_types[object.type];
   if (!typeDefinition) {
