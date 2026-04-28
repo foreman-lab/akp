@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.7] - 2026-04-28
+
+### Added
+
+- **`tsRepoExtractor` — first working domain-pack extractor**, in `src/extraction/extractors/ts-repo/index.ts`. Walks `<rootDir>/src/` and emits one `module` object per top-level directory with `provenance.generated_by: "ts-repo"` and `confidence: "mechanical"`. Built strict-TDD style (red → green): the failing test landed first, then the minimum impl to pass.
+- `defaultExtractors()` now returns `[tsRepoExtractor()]` so `akp refresh` and `akp extractors list` are functionally meaningful out of the box.
+- `tests/fixtures/ts-tiny-repo/` — minimal AKP project fixture (manifest, schema, two stub `src/` directories) used by the integration test.
+- 4 integration tests in `tests/integration/extraction/ts-repo-extractor.test.ts` covering descriptor shape, module-id derivation, provenance stamping, and required-attribute coverage.
+
+### Changed
+
+- E2E tests for `akp extractors list` and `akp refresh` now assert the populated-registry paths (list contains `ts-repo`; `--extractor unknown-id` fails with `AKP_EXTRACTOR_UNKNOWN`). The previous empty-registry assertions are no longer reachable from the CLI.
+
+### Fixed
+
+- CLI `--version` was at `0.1.0-alpha.5` while `package.json` had advanced to `0.1.0-alpha.6` — the version drift fix in `0.1.0-alpha.5` only updated the CLI string once. Both now report `0.1.0-alpha.7`.
+
+### Internal
+
+- Dogfood result against the AKP self-pack (`akp refresh --dry-run`): would add 10 ts-repo `module.*` objects (one per src/ directory), replace 0, remove 0, preserve all 17 human-authored objects intact. Identity-based merge confirmed: extractor only owns objects whose `provenance.generated_by` starts with `ts-repo`.
+- Test count 21 → 25.
+- Phase 3 first TDD cycle complete. Future cycles extend ts-repo to symbol level (`command`, `function`, `class`, `port`, `use_case`).
+
 ## [0.1.0-alpha.6] - 2026-04-28
 
 ### Added

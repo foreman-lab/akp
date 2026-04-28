@@ -1,11 +1,13 @@
+import { tsRepoExtractor } from "./extractors/ts-repo/index.js";
+
 import type { SourceExtractor } from "./source-extractor.js";
 
 /**
- * Default extractor list wired into the CLI. Phase 2 ships with no built-in
- * extractors — `akp refresh` will exit with `AKP_NO_EXTRACTORS_REGISTERED`
- * until a domain pack is added here. The TypeScript code-repo extractor
- * lands in Phase 3 and will be the first entry.
+ * Default extractor list wired into the CLI. Currently ships one extractor —
+ * `ts-repo`, which emits `module` objects from top-level directories under
+ * `<rootDir>/src/`. Future TDD cycles extend it to symbol level and may add
+ * additional extractors (e.g. for docs, OpenAPI specs, etc.).
  */
 export function defaultExtractors(): readonly SourceExtractor[] {
-  return [];
+  return [tsRepoExtractor()];
 }

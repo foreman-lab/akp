@@ -1,0 +1,16 @@
+version: 0.1
+artifact:
+  name: ts-tiny-repo
+  kind: software_repo
+  description: Minimal TypeScript repo fixture for the ts-repo extractor's tests.
+
+sources:
+  include:
+    - src/**
+
+schema: schemas/code.yaml
+objects: objects.jsonl
+
+security:
+  default_classification: internal
+  default_exposure: committed

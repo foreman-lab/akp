@@ -1,0 +1,8 @@
+object_types:
+  module:
+    kind: fact
+    description: Top-level feature directory under src/.
+    required_attributes:
+      - paths
+
+relationship_types: {}

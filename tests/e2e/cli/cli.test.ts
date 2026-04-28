@@ -32,26 +32,27 @@ test("CLI rejects invalid lookup limits", async () => {
   });
 });
 
-test("CLI: akp extractors list returns an empty array when no extractors are registered", async () => {
+test("CLI: akp extractors list reports the registered ts-repo extractor", async () => {
   await withTempFixture("code-repo", async (projectRoot) => {
     const cliPath = path.resolve("dist-tests/src/cli/index.js");
     const { stdout } = await execFileAsync(process.execPath, [cliPath, "extractors", "list"], {
       cwd: projectRoot,
     });
-    const parsed: unknown = JSON.parse(stdout);
-    assert.deepEqual(parsed, []);
+    const parsed = JSON.parse(stdout) as Array<{ id: string }>;
+    const ids = parsed.map((entry) => entry.id);
+    assert.ok(ids.includes("ts-repo"), `expected ts-repo in extractors list, got ${ids.join(",")}`);
   });
 });
 
-test("CLI: akp refresh exits with AKP_NO_EXTRACTORS_REGISTERED when no extractors are wired", async () => {
+test("CLI: akp refresh exits with AKP_EXTRACTOR_UNKNOWN for an unregistered --extractor id", async () => {
   await withTempFixture("code-repo", async (projectRoot) => {
     const cliPath = path.resolve("dist-tests/src/cli/index.js");
     await assert.rejects(
       () =>
-        execFileAsync(process.execPath, [cliPath, "refresh"], {
+        execFileAsync(process.execPath, [cliPath, "refresh", "--extractor", "does-not-exist"], {
           cwd: projectRoot,
         }),
-      /AKP_NO_EXTRACTORS_REGISTERED/,
+      /AKP_EXTRACTOR_UNKNOWN/,
     );
   });
 });
