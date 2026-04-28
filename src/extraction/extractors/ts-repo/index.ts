@@ -31,9 +31,11 @@ export interface TsRepoDependencies {
  *    `<rootDir>/src/cli/index.ts` (commander-style CLI declarations)
  *  - one `use_case` object per exported `make<Name>` factory under
  *    `<rootDir>/src/**\/use-cases/*.ts`
+ *  - one `port` object per `export interface <Name>Port` declaration
+ *    anywhere under `<rootDir>/src/**\/*.ts`
  *
- * Future TDD cycles add `function`, `class`, `port`, and the
- * corresponding relationships.
+ * Future TDD cycles add `function`, `class`, and the corresponding
+ * relationships.
  */
 export function tsRepoExtractor(deps: TsRepoDependencies = {}): SourceExtractor {
   const readdir = deps.readdir ?? defaultReaddir;
@@ -43,14 +45,15 @@ export function tsRepoExtractor(deps: TsRepoDependencies = {}): SourceExtractor 
       return {
         id: EXTRACTOR_ID,
         description:
-          "Extracts module, command, and use_case objects from a TypeScript repo (src/ directories, src/cli/index.ts program.command() calls, and src/**/use-cases/*.ts make<Name> factories).",
-        produces_types: ["module", "command", "use_case"],
+          "Extracts module, command, use_case, and port objects from a TypeScript repo (src/ directories, src/cli/index.ts program.command() calls, src/**/use-cases/*.ts make<Name> factories, and `export interface <Name>Port` declarations under src/**/*.ts).",
+        produces_types: ["module", "command", "use_case", "port"],
       };
     },
     async *extract(context: SourceExtractorContext): AsyncIterable<KnowledgeObject> {
       yield* extractModules(context, readdir);
       yield* extractCommands(context, readFile);
       yield* extractUseCases(context, readdir, readFile);
+      yield* extractPorts(context, readdir, readFile);
     },
   };
 }
@@ -288,6 +291,93 @@ function buildUseCaseObject(
     summary: `Application use case factory ${factoryName}.`,
     attributes: {
       factory: factoryName,
+    },
+    relationships: [],
+    sources: [
+      {
+        source_kind: "file",
+        uri: pathToFileURL(filePath).href,
+      },
+    ],
+    classification: context.manifest.security.default_classification,
+    exposure: context.manifest.security.default_exposure,
+    provenance: {
+      generated_by: EXTRACTOR_ID,
+      generated_at: now,
+      confidence: "mechanical",
+      verified_against: [],
+    },
+    freshness: {
+      last_verified: now,
+      status: "fresh",
+    },
+    review_state: "accepted",
+  };
+}
+
+async function* extractPorts(
+  context: SourceExtractorContext,
+  readdir: NonNullable<TsRepoDependencies["readdir"]>,
+  readFile: NonNullable<TsRepoDependencies["readFile"]>,
+): AsyncIterable<KnowledgeObject> {
+  const srcDir = path.join(context.rootDir, "src");
+  const files: string[] = [];
+  await collectTypeScriptFiles(srcDir, readdir, files);
+
+  const portPattern = /^export\s+interface\s+(\w+)Port\b/gm;
+  const now = new Date().toISOString();
+
+  for (const filePath of files.sort()) {
+    const content = await readFile(filePath, "utf8");
+    for (const match of content.matchAll(portPattern)) {
+      const tail = match[1]!;
+      const interfaceName = `${tail}Port`;
+      const id = `port.${kebabCase(tail)}`;
+      yield buildPortObject(id, interfaceName, filePath, context, now);
+    }
+  }
+}
+
+async function collectTypeScriptFiles(
+  dir: string,
+  readdir: NonNullable<TsRepoDependencies["readdir"]>,
+  out: string[],
+): Promise<void> {
+  let entries: Dirent[];
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (error: unknown) {
+    const nodeError = error as NodeJS.ErrnoException;
+    if (nodeError.code === "ENOENT") return;
+    throw error;
+  }
+
+  for (const entry of entries) {
+    if (entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
+    const childPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await collectTypeScriptFiles(childPath, readdir, out);
+    } else if (entry.isFile() && entry.name.endsWith(".ts")) {
+      out.push(childPath);
+    }
+  }
+}
+
+function buildPortObject(
+  id: string,
+  interfaceName: string,
+  filePath: string,
+  context: SourceExtractorContext,
+  now: string,
+): KnowledgeObject {
+  return {
+    id,
+    type: "port",
+    kind: "fact",
+    title: interfaceName,
+    summary: `Outbound port interface ${interfaceName}.`,
+    attributes: {
+      interface_name: interfaceName,
     },
     relationships: [],
     sources: [

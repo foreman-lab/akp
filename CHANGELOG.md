@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.27] - 2026-04-28
+
+### Added
+
+- **`ts-repo` extractor now emits `port` objects** for every `export interface <Name>Port` declaration found under `<rootDir>/src/**/*.ts`. The id is `port.<kebab-case>` of the interface name with the `Port` suffix stripped (`FileSystemPort` → `port.file-system`, `LoggerPort` → `port.logger`). Interfaces without the `Port` suffix and non-exported interfaces are skipped. Each emitted object carries `attributes.interface_name` (the literal interface identifier including `Port`), a `file://` source URI, `provenance.generated_by: "ts-repo"`, and `confidence: "mechanical"`. `produces_types` advertises `port` alongside `module`, `command`, and `use_case`.
+
+### Changed
+
+- Self-pack schema (`.akp/schemas/code.yaml`) declares the new `port` object_type so `npm run dev -- refresh -e ts-repo` does not fail with `AKP_OBJECT_TYPE_UNKNOWN` when the extractor encounters this repo's existing `<Name>Port` interfaces (e.g. `FileSystemPort`).
+
+### Internal
+
+- Phase 3 cycle 4 second increment. RED → GREEN pair (`7a880ea` → this commit). New helper `collectTypeScriptFiles` recursively walks the source tree skipping `.`/`_`-prefixed directories — it is the more general successor to the use-case-only walker and could absorb that role in a future cleanup. 49/49 tests pass.
+
 ## [0.1.0-alpha.26] - 2026-04-28
 
 ### Fixed

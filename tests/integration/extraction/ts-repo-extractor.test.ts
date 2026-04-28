@@ -269,10 +269,10 @@ test("ts-repo extractor emits one 'port' object per exported `<Name>Port` interf
 
   const ids = ports.map((object) => object.id).sort();
   // Fixture src/alpha/ports.ts has:
-  //   ClockPort       (exported, suffix matches)        -> port.clock
-  //   LoggerPort      (exported, suffix matches)        -> port.logger
-  //   NotAPort        (exported, no Port suffix)        -> skipped
-  //   InternalPort    (not exported)                    -> skipped
+  //   ClockPort        (exported, suffix matches)       -> port.clock
+  //   LoggerPort       (exported, suffix matches)       -> port.logger
+  //   PlainInterface   (exported, no Port suffix)       -> skipped
+  //   InternalPort     (not exported)                   -> skipped
   assert.deepEqual(ids, ["port.clock", "port.logger"]);
 
   for (const port of ports) {

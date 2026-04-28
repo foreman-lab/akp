@@ -10,7 +10,7 @@ export interface LoggerPort {
   info(message: string): void;
 }
 
-export interface NotAPort {
+export interface PlainInterface {
   doSomething(): void;
 }
 
