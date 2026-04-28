@@ -187,7 +187,7 @@ test("ts-repo extractor emits one 'command' object per program.command(...) call
   }
 
   const ids = commands.map((object) => object.id).sort();
-  assert.deepEqual(ids, ["command.farewell", "command.greet"]);
+  assert.deepEqual(ids, ["command.echo", "command.farewell", "command.greet"]);
 
   for (const command of commands) {
     assert.equal(command.kind, "fact");

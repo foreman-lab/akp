@@ -87,8 +87,15 @@ async function* extractCommands(
   const seen = new Set<string>();
   let match: RegExpExecArray | null;
   while ((match = COMMAND_PATTERN.exec(content)) !== null) {
-    const commandName = match[1];
-    if (commandName === undefined || seen.has(commandName)) {
+    const captured = match[1];
+    if (captured === undefined) {
+      continue;
+    }
+    // Strip commander argument syntax: `program.command("get <id>")` should
+    // yield `command.get`, not `command.get <id>`. Take only the first
+    // whitespace-separated token of the captured string.
+    const commandName = captured.split(/\s+/)[0];
+    if (commandName === undefined || commandName.length === 0 || seen.has(commandName)) {
       continue;
     }
     seen.add(commandName);

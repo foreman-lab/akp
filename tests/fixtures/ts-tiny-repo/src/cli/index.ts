@@ -21,4 +21,11 @@ program
     console.log("bye");
   });
 
+program
+  .command("echo <message>")
+  .description("Echo back the given message — exercises commander argument syntax")
+  .action((message: string) => {
+    console.log(message);
+  });
+
 program.parse(process.argv);

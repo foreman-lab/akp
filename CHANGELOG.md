@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.12] - 2026-04-28
+
+### Fixed
+
+- **Commander argument syntax produced malformed command ids** (caught by the fourth self-review pass). `program.command("get <id>")` was previously captured verbatim, yielding `command.get <id>` (literal space + angle brackets in the id). Fixed by stripping the captured string to its first whitespace-separated token. Closed via strict TDD: added `program.command("echo <message>")` to the fixture, watched the existing strict-equality test fail with `'command.echo <message>'` (red), then added the `.split(/\s+/)[0]` post-processing in the extractor (green).
+- **`CLAUDE.md` was stale again** — the Architecture section still described command extraction as "future TDD cycles extend it to symbol level (`command`, `function`, ...)" even though command extraction shipped in `0.1.0-alpha.11`. Same staleness pattern caught at alpha.2 and alpha.4. Now describes the actual shipped behavior including the argument-syntax normalization.
+
+### Internal
+
+- Mostly strict-TDD: failing assertion → minimum impl change → green. The fix is one-line (`captured.split(/\s+/)[0]`) but bracketed by a real red-green cycle.
+
 ## [0.1.0-alpha.11] - 2026-04-28
 
 ### Added
