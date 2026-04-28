@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.9] - 2026-04-28
+
+### Added
+
+- `TsRepoDependencies` injection seam on `tsRepoExtractor()` — accepts an optional `readdir` function so tests can exercise filesystem edge cases (EACCES, EMFILE) without touching real filesystem permissions.
+- Test for non-ENOENT `readdir` propagation: a fake `readdir` throws EACCES; the extractor must propagate the error rather than swallow it. Closes the last untested branch in `src/extraction/extractors/ts-repo/index.ts`.
+
+### Internal
+
+- **First strict-TDD cycle on this project.** Failing test landed first (red: `TS2554 Expected 0 arguments, but got 1` because the factory didn't yet accept dependencies). Then the minimum impl change to make the test pass (green: optional `deps` param defaulting to the real `readdir`). Test count 27 → 28.
+
 ## [0.1.0-alpha.8] - 2026-04-28
 
 ### Added

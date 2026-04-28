@@ -137,3 +137,24 @@ test("ts-repo extractor returns no objects when <rootDir>/src does not exist", a
 
   assert.equal(objects.length, 0);
 });
+
+test("ts-repo extractor propagates non-ENOENT readdir failures (e.g. EACCES)", async () => {
+  const project = await loadProject(FIXTURE_ROOT);
+
+  const eacces = Object.assign(new Error("permission denied"), { code: "EACCES" });
+  const failingReaddir = async () => {
+    throw eacces;
+  };
+
+  const extractor = tsRepoExtractor({ readdir: failingReaddir });
+
+  await assert.rejects(async () => {
+    for await (const _object of extractor.extract({
+      rootDir: project.rootDir,
+      manifest: project.manifest,
+      schema: project.schema,
+    })) {
+      // intentionally empty — should never execute
+    }
+  }, /permission denied|EACCES/);
+});

@@ -1,4 +1,4 @@
-import { readdir } from "node:fs/promises";
+import { readdir as fsReaddir } from "node:fs/promises";
 import path from "node:path";
 
 import type { KnowledgeObject, Manifest } from "../../../core/protocol/types.js";
@@ -7,8 +7,19 @@ import type {
   SourceExtractor,
   SourceExtractorContext,
 } from "../../source-extractor.js";
+import type { Dirent } from "node:fs";
 
 const EXTRACTOR_ID = "ts-repo";
+
+/**
+ * Filesystem operations the extractor depends on. Injected so tests can
+ * exercise edge cases (e.g. EACCES propagation) that are awkward to trigger
+ * against the real filesystem on every platform.
+ */
+export interface TsRepoDependencies {
+  /** Defaults to `node:fs/promises.readdir` with `{withFileTypes: true}`. */
+  readdir?: (path: string, options: { withFileTypes: true }) => Promise<Dirent[]>;
+}
 
 /**
  * Extractor for TypeScript repositories. Today it emits one `module` object
@@ -16,7 +27,8 @@ const EXTRACTOR_ID = "ts-repo";
  * `command`, `function`, `class`, `port`, `use_case` and the corresponding
  * relationships.
  */
-export function tsRepoExtractor(): SourceExtractor {
+export function tsRepoExtractor(deps: TsRepoDependencies = {}): SourceExtractor {
+  const readdir = deps.readdir ?? defaultReaddir;
   return {
     describe(): ExtractorDescriptor {
       return {
@@ -27,15 +39,25 @@ export function tsRepoExtractor(): SourceExtractor {
       };
     },
     extract(context: SourceExtractorContext): AsyncIterable<KnowledgeObject> {
-      return extractModules(context);
+      return extractModules(context, readdir);
     },
   };
 }
 
-async function* extractModules(context: SourceExtractorContext): AsyncIterable<KnowledgeObject> {
+async function defaultReaddir(
+  pathArg: string,
+  options: { withFileTypes: true },
+): Promise<Dirent[]> {
+  return fsReaddir(pathArg, options);
+}
+
+async function* extractModules(
+  context: SourceExtractorContext,
+  readdir: NonNullable<TsRepoDependencies["readdir"]>,
+): AsyncIterable<KnowledgeObject> {
   const srcDir = path.join(context.rootDir, "src");
 
-  let entries;
+  let entries: Dirent[];
   try {
     entries = await readdir(srcDir, { withFileTypes: true });
   } catch (error: unknown) {
