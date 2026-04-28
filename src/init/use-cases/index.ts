@@ -11,20 +11,20 @@ export interface FileSystemPort {
   writeFile(target: string, content: string, opts?: { flag?: "wx" | "w" }): Promise<void>;
 }
 
-export interface InitAkpInput {
+export interface InitKnowledgeBaseInput {
   /** Absolute path to the directory the AKB should be initialised under. */
   rootDir: string;
 }
 
-export interface InitAkpResult {
+export interface InitKnowledgeBaseResult {
   akp_dir: string;
   manifest_path: string;
   schema_path: string;
   objects_path: string;
 }
 
-export interface InitAkpUseCase {
-  execute(input: InitAkpInput): Promise<InitAkpResult>;
+export interface InitKnowledgeBaseUseCase {
+  execute(input: InitKnowledgeBaseInput): Promise<InitKnowledgeBaseResult>;
 }
 
 /**
@@ -32,9 +32,9 @@ export interface InitAkpUseCase {
  * `manifest.yaml`, `schemas/base.yaml`, and `objects.jsonl` are preserved
  * (the use case tolerates the `EEXIST` raised by `flag: "wx"` writes).
  */
-export function makeInitAkp(fs: FileSystemPort): InitAkpUseCase {
+export function makeInitKnowledgeBase(fs: FileSystemPort): InitKnowledgeBaseUseCase {
   return {
-    async execute({ rootDir }: InitAkpInput): Promise<InitAkpResult> {
+    async execute({ rootDir }: InitKnowledgeBaseInput): Promise<InitKnowledgeBaseResult> {
       const akpDir = path.join(rootDir, ".akp");
       const schemasDir = path.join(akpDir, "schemas");
       const manifestPath = path.join(akpDir, "manifest.yaml");

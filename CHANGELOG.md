@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.20] - 2026-04-28
+
+### Changed
+
+- **Renamed `InitAkp*` to `InitKnowledgeBase*`** to comply with the project's naming-neutral rule (saved memory: `feedback_naming_neutral_class_types`). Affected symbols in `src/init/use-cases/index.ts`: `makeInitAkp` → `makeInitKnowledgeBase`, `InitAkpInput` → `InitKnowledgeBaseInput`, `InitAkpResult` → `InitKnowledgeBaseResult`, `InitAkpUseCase` → `InitKnowledgeBaseUseCase`. Matches the existing siblings `BuildKnowledgeBase` / `CheckKnowledgeBase` / `LookupKnowledge` / `BriefKnowledge`. Constants (`AKP_DIR`) and CLI verbs (`akp init`) keep the brand per the rule.
+
+### Internal
+
+- Pure rename, no behavior change. 42/42 tests still pass. Open follow-up: same rule applies to `AkpError` (saved memory's canonical example) — landing as `0.1.0-alpha.21` in a separate commit since it touches ~30 throw sites.
+
 ## [0.1.0-alpha.19] - 2026-04-28
 
 ### Added

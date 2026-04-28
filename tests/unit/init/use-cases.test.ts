@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import test from "node:test";
 
-import { makeInitAkp } from "../../../src/init/use-cases/index.js";
+import { makeInitKnowledgeBase } from "../../../src/init/use-cases/index.js";
 
 import type { FileSystemPort } from "../../../src/init/use-cases/index.js";
 
@@ -42,7 +42,7 @@ const SYNTHETIC_ROOT = path.join("/", "synthetic-akp-init-fixture");
 
 test("init scaffolds manifest.yaml, schemas/base.yaml, and objects.jsonl under .akp/", async () => {
   const fs = new FakeFileSystem();
-  const init = makeInitAkp(fs);
+  const init = makeInitKnowledgeBase(fs);
 
   const result = await init.execute({ rootDir: SYNTHETIC_ROOT });
 
@@ -76,7 +76,7 @@ test("init is idempotent — pre-existing files are preserved and not overwritte
   await fs.writeFile(manifestPath, "PRE-EXISTING-USER-CONTENT", { flag: "w" });
   await fs.writeFile(objectsPath, '{"id":"module.preexisting"}', { flag: "w" });
 
-  const init = makeInitAkp(fs);
+  const init = makeInitKnowledgeBase(fs);
   await init.execute({ rootDir: SYNTHETIC_ROOT });
 
   assert.equal(fs.files.get(manifestPath), "PRE-EXISTING-USER-CONTENT");
@@ -85,7 +85,7 @@ test("init is idempotent — pre-existing files are preserved and not overwritte
 
 test("init writes the manifest with the rootDir's basename as the artifact name", async () => {
   const fs = new FakeFileSystem();
-  const init = makeInitAkp(fs);
+  const init = makeInitKnowledgeBase(fs);
 
   await init.execute({ rootDir: path.join("/", "tmp", "my-special-project") });
 

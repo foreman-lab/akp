@@ -1,6 +1,6 @@
 {
   "name": "@foreman-lab/akp",
-  "version": "0.1.0-alpha.19",
+  "version": "0.1.0-alpha.20",
   "description": "Artifact Knowledge Protocol: pluggable reference infrastructure for AI agents.",
   "type": "module",
   "private": false,
