@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.10] - 2026-04-28
+
+### Fixed
+
+- **Malformed `file://` URI in extracted module sources** (independent code review finding). `file://src/${name}` parses per RFC 3986 as `authority=src` (a network host), not a path under `src/`. Now uses `pathToFileURL(path.join(rootDir, "src", name)).href` to produce a proper absolute `file:///` URI. Closed via TDD: failing test asserted `URL(uri).host === ""` (red) before the impl change (green).
+- **Resource leak when SQLite `initialize()` throws** during `akp refresh` (independent code review finding). Moved `indexed.initialize()` inside the existing `try/finally` block in `src/cli/index.ts` so the `close()` call always runs, even on initialize-time errors.
+- **Tmp directory leak in the ENOENT extractor test** — added `rm({recursive: true, force: true})` in a `finally` to remove the per-test temp dir after each run.
+
+### Added
+
+- Test for proper `file:///` URI shape on every emitted module's `sources[0].uri`. Asserts `protocol === "file:"` and `host === ""`.
+- Doc comment in `extractModules` explaining the `.` and `_` directory-prefix filter rationale (independent code review finding — was undocumented).
+
+### Internal
+
+- Test count 28 → 29. Independent typescript-reviewer pass (separate session) caught two medium-severity bugs and several low-severity items; the medium bugs and the easy lows are addressed in this commit. Deferred (broader change): tightening `tests/fixtures/**` ESLint ignore by extending `tsconfig.test.json` `include`.
+
 ## [0.1.0-alpha.9] - 2026-04-28
 
 ### Added

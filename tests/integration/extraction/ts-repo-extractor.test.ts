@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -115,27 +115,60 @@ test("ts-repo extractor sets a non-empty attributes.purpose on every emitted mod
   }
 });
 
+test("ts-repo extractor emits each module with a parseable file:/// URI in sources", async () => {
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor();
+
+  const modules: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: project.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "module") {
+      modules.push(object);
+    }
+  }
+
+  for (const module of modules) {
+    const source = module.sources[0];
+    assert.ok(source, `module ${module.id} must have at least one source`);
+    const url = new URL(source.uri);
+    assert.equal(url.protocol, "file:", `source URI must use file: scheme, got ${source.uri}`);
+    // Authority must be empty (file:///path...) — `file://src/...` wrongly treats `src` as a network host.
+    assert.equal(
+      url.host,
+      "",
+      `source URI must have empty authority (use file:///), got host="${url.host}" for ${source.uri}`,
+    );
+  }
+});
+
 test("ts-repo extractor returns no objects when <rootDir>/src does not exist", async () => {
   const emptyRoot = path.join(tmpdir(), `akp-ts-repo-no-src-${Date.now()}-${Math.random()}`);
   await mkdir(emptyRoot, { recursive: true });
 
-  const project = await loadProject(FIXTURE_ROOT);
-  const manifest: Manifest = {
-    ...project.manifest,
-    artifact: { ...project.manifest.artifact, name: "no-src-fixture" },
-  };
+  try {
+    const project = await loadProject(FIXTURE_ROOT);
+    const manifest: Manifest = {
+      ...project.manifest,
+      artifact: { ...project.manifest.artifact, name: "no-src-fixture" },
+    };
 
-  const extractor = tsRepoExtractor();
-  const objects: KnowledgeObject[] = [];
-  for await (const object of extractor.extract({
-    rootDir: emptyRoot,
-    manifest,
-    schema: project.schema,
-  })) {
-    objects.push(object);
+    const extractor = tsRepoExtractor();
+    const objects: KnowledgeObject[] = [];
+    for await (const object of extractor.extract({
+      rootDir: emptyRoot,
+      manifest,
+      schema: project.schema,
+    })) {
+      objects.push(object);
+    }
+
+    assert.equal(objects.length, 0);
+  } finally {
+    await rm(emptyRoot, { recursive: true, force: true });
   }
-
-  assert.equal(objects.length, 0);
 });
 
 test("ts-repo extractor propagates non-ENOENT readdir failures (e.g. EACCES)", async () => {

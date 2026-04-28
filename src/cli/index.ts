@@ -26,7 +26,7 @@ const program = new Command();
 program
   .name("akp")
   .description("Artifact Knowledge Protocol command line tools")
-  .version("0.1.0-alpha.9");
+  .version("0.1.0-alpha.10");
 
 program
   .command("init")
@@ -125,8 +125,8 @@ program
     const project = await loadProject(process.cwd());
     const canonical = makeJsonlCanonicalStore(project.objectsPath, project.schema);
     const indexed = new SqliteStore(project.databasePath);
-    indexed.initialize();
     try {
+      indexed.initialize();
       const refresh = makeRefresh({
         canonical,
         indexed,

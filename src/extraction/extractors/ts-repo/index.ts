@@ -1,5 +1,6 @@
 import { readdir as fsReaddir } from "node:fs/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import type { KnowledgeObject, Manifest } from "../../../core/protocol/types.js";
 import type {
@@ -69,6 +70,10 @@ async function* extractModules(
   }
 
   const now = new Date().toISOString();
+  // Filter prefixes: `.` for hidden directories (`.cache`, `.next`, ...);
+  // `_` for conventionally private/generated directories (`_internal`,
+  // `_generated`). Project-specific overrides are a future-cycle concern;
+  // surfacing this here so anyone extending the policy sees the rationale.
   const moduleEntries = entries
     .filter(
       (entry) => entry.isDirectory() && !entry.name.startsWith(".") && !entry.name.startsWith("_"),
@@ -76,11 +81,16 @@ async function* extractModules(
     .sort((a, b) => a.name.localeCompare(b.name));
 
   for (const entry of moduleEntries) {
-    yield buildModuleObject(entry.name, context.manifest, now);
+    yield buildModuleObject(entry.name, context.rootDir, context.manifest, now);
   }
 }
 
-function buildModuleObject(name: string, manifest: Manifest, now: string): KnowledgeObject {
+function buildModuleObject(
+  name: string,
+  rootDir: string,
+  manifest: Manifest,
+  now: string,
+): KnowledgeObject {
   return {
     id: `module.${name}`,
     type: "module",
@@ -95,7 +105,7 @@ function buildModuleObject(name: string, manifest: Manifest, now: string): Knowl
     sources: [
       {
         source_kind: "directory",
-        uri: `file://src/${name}`,
+        uri: pathToFileURL(path.join(rootDir, "src", name)).href,
       },
     ],
     classification: manifest.security.default_classification,
