@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.24] - 2026-04-28
+
+### Added
+
+- **`ts-repo` extractor now emits `use_case` objects** for every exported `make<Name>` factory found under `src/**/use-cases/*.ts`. The id is the kebab-case of the factory's PascalName tail (`makeBuildKnowledgeBase` → `use_case.build-knowledge-base`, `makeRefresh` → `use_case.refresh`). Non-exported factories are skipped. Each emitted object carries `attributes.factory` (the factory name), a `file://` source URI to the defining file, `provenance.generated_by: "ts-repo"`, and `confidence: "mechanical"`. `produces_types` advertises `use_case` alongside `module` and `command`.
+
+### Internal
+
+- Phase 3 cycle 4 first increment. Dogfoods the hex refactor: every `make*UseCase` factory in this repo's own `src/{init,build,query,extraction}/use-cases/` becomes mechanically discoverable through the same path the TS extractor exposes. 47/47 tests pass (2 new integration tests in `tests/integration/extraction/ts-repo-extractor.test.ts`; fixture extended with `tests/fixtures/ts-tiny-repo/src/alpha/use-cases/index.ts` and a `use_case` object_type in `code.yaml`).
+
 ## [0.1.0-alpha.23] - 2026-04-28
 
 ### Fixed

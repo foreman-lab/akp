@@ -41,13 +41,14 @@ export function tsRepoExtractor(deps: TsRepoDependencies = {}): SourceExtractor 
       return {
         id: EXTRACTOR_ID,
         description:
-          "Extracts module and command objects from a TypeScript repo (src/ directories and src/cli/index.ts program.command() calls).",
-        produces_types: ["module", "command"],
+          "Extracts module, command, and use_case objects from a TypeScript repo (src/ directories, src/cli/index.ts program.command() calls, and src/**/use-cases/*.ts make<Name> factories).",
+        produces_types: ["module", "command", "use_case"],
       };
     },
     async *extract(context: SourceExtractorContext): AsyncIterable<KnowledgeObject> {
       yield* extractModules(context, readdir);
       yield* extractCommands(context, readFile);
+      yield* extractUseCases(context, readdir, readFile);
     },
   };
 }
@@ -213,6 +214,107 @@ function buildModuleObject(
     },
     review_state: "accepted",
   };
+}
+
+async function* extractUseCases(
+  context: SourceExtractorContext,
+  readdir: NonNullable<TsRepoDependencies["readdir"]>,
+  readFile: NonNullable<TsRepoDependencies["readFile"]>,
+): AsyncIterable<KnowledgeObject> {
+  const srcDir = path.join(context.rootDir, "src");
+  const files: string[] = [];
+  await collectUseCaseFiles(srcDir, readdir, files);
+
+  // Function-local regex avoids global-RegExp lastIndex carry-over.
+  const factoryPattern = /^export\s+function\s+make([A-Z]\w*)\b/gm;
+  const now = new Date().toISOString();
+
+  for (const filePath of files.sort()) {
+    const content = await readFile(filePath, "utf8");
+    for (const match of content.matchAll(factoryPattern)) {
+      const factoryName = `make${match[1]}`;
+      const id = `use_case.${kebabCase(match[1]!)}`;
+      yield buildUseCaseObject(id, factoryName, filePath, context, now);
+    }
+  }
+}
+
+async function collectUseCaseFiles(
+  srcDir: string,
+  readdir: NonNullable<TsRepoDependencies["readdir"]>,
+  out: string[],
+): Promise<void> {
+  let entries: Dirent[];
+  try {
+    entries = await readdir(srcDir, { withFileTypes: true });
+  } catch (error: unknown) {
+    const nodeError = error as NodeJS.ErrnoException;
+    if (nodeError.code === "ENOENT") return;
+    throw error;
+  }
+
+  for (const entry of entries) {
+    if (entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
+    const childPath = path.join(srcDir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === "use-cases") {
+        const useCaseEntries = await readdir(childPath, { withFileTypes: true });
+        for (const file of useCaseEntries) {
+          if (file.isFile() && file.name.endsWith(".ts")) {
+            out.push(path.join(childPath, file.name));
+          }
+        }
+      } else {
+        await collectUseCaseFiles(childPath, readdir, out);
+      }
+    }
+  }
+}
+
+function buildUseCaseObject(
+  id: string,
+  factoryName: string,
+  filePath: string,
+  context: SourceExtractorContext,
+  now: string,
+): KnowledgeObject {
+  return {
+    id,
+    type: "use_case",
+    kind: "fact",
+    title: factoryName,
+    summary: `Application use case factory ${factoryName}.`,
+    attributes: {
+      factory: factoryName,
+    },
+    relationships: [],
+    sources: [
+      {
+        source_kind: "file",
+        uri: pathToFileURL(filePath).href,
+      },
+    ],
+    classification: context.manifest.security.default_classification,
+    exposure: context.manifest.security.default_exposure,
+    provenance: {
+      generated_by: EXTRACTOR_ID,
+      generated_at: now,
+      confidence: "mechanical",
+      verified_against: [],
+    },
+    freshness: {
+      last_verified: now,
+      status: "fresh",
+    },
+    review_state: "accepted",
+  };
+}
+
+function kebabCase(pascal: string): string {
+  return pascal
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
 }
 
 function capitalize(value: string): string {
