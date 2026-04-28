@@ -27,7 +27,8 @@ AKP (Artifact Knowledge Protocol) has **two surfaces** over the same canonical s
 
 - `.akp/objects.jsonl` is the **canonical authored** object source (committed).
 - `.akp/schemas/*.yaml` defines domain object/relationship types referenced by the manifest.
-- `.akp-local/akp.sqlite` is the **generated** local query store (gitignored). All read verbs go through `src/store/sqlite/sqlite-store.ts` (better-sqlite3, with FTS5 for lookup). `src/store/ensure-store-built.ts` is the path query commands use to lazily (re)build the SQLite store from the canonical JSONL when stale.
+- `.akp-local/akp.sqlite` is the **generated** local query store (gitignored). It is the SQLite-backed implementation of the `IndexedStore` interface declared in `src/store/sqlite/sqlite-store.ts` (better-sqlite3 + FTS5); the interface exposes `upsertMany` / `deleteMany` / `replaceAll` for write paths and `getObject` / `lookup` / `neighbors` / `stats` for reads. `src/store/ensure-store-built.ts` is the path query commands use to lazily (re)build the store from the canonical JSONL when stale.
+- The canonical reader exposes a `CanonicalStore` interface with `readAll(): Promise<KnowledgeObject[]>` in `src/knowledge/read-objects.ts`; `makeJsonlCanonicalStore(objectsPath, schema)` is the JSONL-backed factory. Future refresh / extractor flows will depend on this interface rather than the concrete reader.
 
 **Protocol model.** Every knowledge object conforms to `KnowledgeObject` in `src/core/protocol/types.ts`: a typed envelope with `kind` (one of `fact | convention | procedure`), per-object `classification` (`public | internal | restricted | confidential`), `exposure` (`committed | local-only | ephemeral`), `provenance`, `freshness`, and `review_state`. Zod schemas in `src/core/protocol/schema.ts` validate this; the validator is shared between `check`, `build`, and ingest. When changing the envelope, update both `types.ts` and `schema.ts` together.
 
