@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+*.log
+
+# AKP generated local state
+.akp-local/
+examples/**/.akp-local/
+tests/fixtures/**/.akp-local/
+dist-tests/
+
+# Claude Code local working state
+.claude/
+

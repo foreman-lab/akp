@@ -1,0 +1,26 @@
+version: 0.1
+artifact:
+  name: akp
+  kind: software_repo
+  description: Artifact Knowledge Protocol implementation for pluggable AI agent reference infrastructure.
+
+sources:
+  include:
+    - src/**
+    - tests/**
+    - docs/**
+    - README.md
+    - package.json
+  exclude:
+    - node_modules/**
+    - dist/**
+    - dist-tests/**
+    - .akp-local/**
+    - examples/**/.akp-local/**
+    - tests/fixtures/**/.akp-local/**
+
+schema: schemas/code.yaml
+objects: objects.jsonl
+security:
+  default_classification: internal
+  default_exposure: committed

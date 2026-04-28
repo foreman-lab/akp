@@ -1,0 +1,20 @@
+version: 0.1
+artifact:
+  name: example-code-repo
+  kind: software_repo
+  description: Example AKP manifest for a software repository.
+
+sources:
+  include:
+    - src/**
+    - tests/**
+    - docs/**
+  exclude:
+    - node_modules/**
+    - dist/**
+    - coverage/**
+
+schema: schemas/code.yaml
+security:
+  default_classification: internal
+  default_exposure: committed

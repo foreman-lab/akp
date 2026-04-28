@@ -1,0 +1,28 @@
+object_types:
+  module:
+    kind: fact
+    description: Logical subsystem of a software artifact.
+    required_attributes:
+      - paths
+  symbol:
+    kind: fact
+    description: Function, class, type, route, or exported member.
+    required_attributes:
+      - name
+      - path
+  convention:
+    kind: convention
+    description: Prescriptive guidance for working in a scope.
+  recipe:
+    kind: procedure
+    description: Structured task guidance for a common change.
+
+relationship_types:
+  owns:
+    category: containment
+  imports:
+    category: dependency
+  tested_by:
+    category: evidence
+  references:
+    category: reference

@@ -1,0 +1,41 @@
+object_types:
+  module:
+    kind: fact
+    description: Logical subsystem of the AKP implementation.
+    required_attributes:
+      - paths
+      - purpose
+  interface:
+    kind: fact
+    description: External or internal surface exposed by AKP.
+    required_attributes:
+      - surface
+  command:
+    kind: fact
+    description: CLI command exposed by AKP.
+    required_attributes:
+      - command
+  convention:
+    kind: convention
+    description: Prescriptive guidance for working on AKP.
+    required_attributes:
+      - applies_to
+  procedure:
+    kind: procedure
+    description: Structured task guidance for AKP development.
+    required_attributes:
+      - steps
+
+relationship_types:
+  owns:
+    category: containment
+  uses:
+    category: dependency
+  exposes:
+    category: reference
+  tested_by:
+    category: evidence
+  governed_by:
+    category: reference
+  documents:
+    category: reference

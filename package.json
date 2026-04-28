@@ -1,0 +1,57 @@
+{
+  "name": "@foreman-lab/akp",
+  "version": "0.1.0-alpha.0",
+  "description": "Artifact Knowledge Protocol: pluggable reference infrastructure for AI agents.",
+  "type": "module",
+  "private": false,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/foreman-lab/akp.git"
+  },
+  "bin": {
+    "akp": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "examples",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist',{recursive:true,force:true}); fs.rmSync('dist-tests',{recursive:true,force:true})\"",
+    "prebuild": "npm run clean",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "dev": "tsx src/cli/index.ts",
+    "start:mcp": "node dist/cli/index.js mcp",
+    "lint": "eslint .",
+    "pretest": "npm run clean && tsc -p tsconfig.test.json",
+    "test": "node --test \"dist-tests/tests/**/*.test.js\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^12.9.0",
+    "commander": "^12.1.0",
+    "cosmiconfig": "^9.0.1",
+    "fast-glob": "^3.3.3",
+    "ignore": "^7.0.5",
+    "kysely": "^0.28.16",
+    "pino": "^10.3.1",
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
