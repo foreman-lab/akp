@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+
 import { buildKnowledgeBase } from "../../../src/build/build-knowledge-base.js";
 import { lookupKnowledge } from "../../../src/query/query-knowledge-base.js";
 import { withTempFixture } from "../../helpers/temp-project.js";

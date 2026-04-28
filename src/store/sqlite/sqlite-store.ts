@@ -1,6 +1,8 @@
-import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+
+import Database from "better-sqlite3";
+
 import type { KnowledgeObject } from "../../core/protocol/types.js";
 
 export interface LookupResult {
@@ -141,7 +143,9 @@ export class SqliteStore {
   }
 
   getObject(id: string): KnowledgeObject | null {
-    const row = this.db.prepare("SELECT object_json FROM objects WHERE id = ?").get(id) as ObjectRow | undefined;
+    const row = this.db.prepare("SELECT object_json FROM objects WHERE id = ?").get(id) as
+      | ObjectRow
+      | undefined;
     return row ? (JSON.parse(row.object_json) as KnowledgeObject) : null;
   }
 
@@ -209,8 +213,12 @@ export class SqliteStore {
   }
 
   stats(): { object_count: number; relationship_count: number; stale_count: number } {
-    const objectCount = this.db.prepare("SELECT COUNT(*) AS count FROM objects").get() as { count: number };
-    const relationshipCount = this.db.prepare("SELECT COUNT(*) AS count FROM relationships").get() as { count: number };
+    const objectCount = this.db.prepare("SELECT COUNT(*) AS count FROM objects").get() as {
+      count: number;
+    };
+    const relationshipCount = this.db
+      .prepare("SELECT COUNT(*) AS count FROM relationships")
+      .get() as { count: number };
     const staleCount = this.db
       .prepare("SELECT COUNT(*) AS count FROM objects WHERE freshness_status != 'fresh'")
       .get() as { count: number };
@@ -233,7 +241,10 @@ export class SqliteStore {
   }
 }
 
-function toNeighbor(row: Record<string, unknown> & Partial<ObjectRow>, direction: "outgoing" | "incoming"): Neighbor {
+function toNeighbor(
+  row: Record<string, unknown> & Partial<ObjectRow>,
+  direction: "outgoing" | "incoming",
+): Neighbor {
   return {
     object: row.object_json ? (JSON.parse(row.object_json) as KnowledgeObject) : null,
     edge: {

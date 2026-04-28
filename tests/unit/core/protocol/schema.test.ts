@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+
 import { knowledgeObjectSchema } from "../../../../src/core/protocol/schema.js";
 
 test("validates a minimal AKP object envelope", () => {

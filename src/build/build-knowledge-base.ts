@@ -10,7 +10,9 @@ export interface BuildKnowledgeBaseResult {
   stale_count: number;
 }
 
-export async function buildKnowledgeBase(startDir = process.cwd()): Promise<BuildKnowledgeBaseResult> {
+export async function buildKnowledgeBase(
+  startDir = process.cwd(),
+): Promise<BuildKnowledgeBaseResult> {
   const project = await loadProject(startDir);
   const objects = await readKnowledgeObjects(project.objectsPath, project.schema);
   const store = new SqliteStore(project.databasePath);

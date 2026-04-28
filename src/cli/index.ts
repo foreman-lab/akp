@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+
 import { buildKnowledgeBase } from "../build/build-knowledge-base.js";
 import { checkKnowledgeBase } from "../check/check-knowledge-base.js";
 import { AkpError } from "../core/errors/akp-error.js";
@@ -12,6 +13,7 @@ import {
   getObject,
   lookupKnowledge,
 } from "../query/query-knowledge-base.js";
+
 import { parsePositiveInt } from "./parse-options.js";
 
 const program = new Command();
@@ -53,7 +55,12 @@ program
   .command("lookup")
   .description("Find AKP knowledge objects for an intent")
   .argument("<intent>", "Natural-language lookup intent")
-  .option("-l, --limit <number>", "Maximum number of objects", (value) => parsePositiveInt(value, undefined, 50), 5)
+  .option(
+    "-l, --limit <number>",
+    "Maximum number of objects",
+    (value) => parsePositiveInt(value, undefined, 50),
+    5,
+  )
   .action(async (intent: string, options: { limit: number }) => {
     printJson(await lookupKnowledge(intent, options.limit));
   });
@@ -70,7 +77,12 @@ program
   .command("neighbors")
   .description("Get objects related to an AKP object")
   .argument("<id>", "AKP object id")
-  .option("-l, --limit <number>", "Maximum number of neighbors", (value) => parsePositiveInt(value, undefined, 100), 20)
+  .option(
+    "-l, --limit <number>",
+    "Maximum number of neighbors",
+    (value) => parsePositiveInt(value, undefined, 100),
+    20,
+  )
   .action(async (id: string, options: { limit: number }) => {
     printJson(await getNeighbors(id, options.limit));
   });
@@ -79,7 +91,12 @@ program
   .command("brief")
   .description("Get a compact AKP orientation for a scope or task")
   .argument("<scope>", "Scope or task")
-  .option("-l, --limit <number>", "Maximum number of primary objects", (value) => parsePositiveInt(value, undefined, 20), 5)
+  .option(
+    "-l, --limit <number>",
+    "Maximum number of primary objects",
+    (value) => parsePositiveInt(value, undefined, 20),
+    5,
+  )
   .action(async (scope: string, options: { limit: number }) => {
     printJson(await briefKnowledge(scope, options.limit));
   });

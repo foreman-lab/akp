@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+
 import { AKP_DIR } from "../core/config/paths.js";
 
 export interface InitAkpResult {

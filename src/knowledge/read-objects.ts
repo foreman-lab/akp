@@ -1,12 +1,17 @@
 import { readFile } from "node:fs/promises";
+
 import { AkpError } from "../core/errors/akp-error.js";
 import { knowledgeObjectSchema } from "../core/protocol/schema.js";
+
 import type { KnowledgeObject, PackSchema } from "../core/protocol/types.js";
 
 function validateObjectAgainstPack(object: KnowledgeObject, schema: PackSchema): void {
   const typeDefinition = schema.object_types[object.type];
   if (!typeDefinition) {
-    throw new AkpError("AKP_OBJECT_TYPE_UNKNOWN", `Object ${object.id} uses undeclared type ${object.type}`);
+    throw new AkpError(
+      "AKP_OBJECT_TYPE_UNKNOWN",
+      `Object ${object.id} uses undeclared type ${object.type}`,
+    );
   }
 
   if (typeDefinition.kind !== object.kind) {
@@ -58,7 +63,10 @@ function validateRelationshipTargets(objects: KnowledgeObject[]): void {
   }
 }
 
-export async function readKnowledgeObjects(objectsPath: string, schema: PackSchema): Promise<KnowledgeObject[]> {
+export async function readKnowledgeObjects(
+  objectsPath: string,
+  schema: PackSchema,
+): Promise<KnowledgeObject[]> {
   let raw: string;
   try {
     raw = await readFile(objectsPath, "utf8");
@@ -79,7 +87,11 @@ export async function readKnowledgeObjects(objectsPath: string, schema: PackSche
     try {
       json = JSON.parse(line);
     } catch (error) {
-      throw new AkpError("AKP_OBJECT_JSON_INVALID", `Invalid JSON on ${objectsPath}:${index + 1}`, error);
+      throw new AkpError(
+        "AKP_OBJECT_JSON_INVALID",
+        `Invalid JSON on ${objectsPath}:${index + 1}`,
+        error,
+      );
     }
 
     const parsed = knowledgeObjectSchema.safeParse(json);

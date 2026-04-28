@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-tests/
+coverage/
+.akp-local/
+examples/**/.akp-local/
+tests/fixtures/**/.akp-local/
+package-lock.json
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+*.jsonl

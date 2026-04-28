@@ -3,9 +3,11 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
+
 import { AkpError } from "../../../src/core/errors/akp-error.js";
-import type { KnowledgeObject, PackSchema } from "../../../src/core/protocol/types.js";
 import { readKnowledgeObjects } from "../../../src/knowledge/read-objects.js";
+
+import type { KnowledgeObject, PackSchema } from "../../../src/core/protocol/types.js";
 
 const schema: PackSchema = {
   object_types: {
@@ -20,16 +22,21 @@ const schema: PackSchema = {
 test("rejects relationship category mismatches", async () => {
   const file = await writeObjects([
     object("module.checkout", {
-      relationships: [{ type: "tested_by", category: "dependency", target: "recipe.checkout-test" }],
+      relationships: [
+        { type: "tested_by", category: "dependency", target: "recipe.checkout-test" },
+      ],
     }),
     object("recipe.checkout-test", { type: "recipe", kind: "procedure" }),
   ]);
 
-  await assert.rejects(() => readKnowledgeObjects(file, schema), (error) => {
-    assert.ok(error instanceof AkpError);
-    assert.equal(error.code, "AKP_RELATIONSHIP_CATEGORY_MISMATCH");
-    return true;
-  });
+  await assert.rejects(
+    () => readKnowledgeObjects(file, schema),
+    (error) => {
+      assert.ok(error instanceof AkpError);
+      assert.equal(error.code, "AKP_RELATIONSHIP_CATEGORY_MISMATCH");
+      return true;
+    },
+  );
 });
 
 test("rejects relationships that point to missing objects", async () => {
@@ -39,11 +46,14 @@ test("rejects relationships that point to missing objects", async () => {
     }),
   ]);
 
-  await assert.rejects(() => readKnowledgeObjects(file, schema), (error) => {
-    assert.ok(error instanceof AkpError);
-    assert.equal(error.code, "AKP_RELATIONSHIP_TARGET_MISSING");
-    return true;
-  });
+  await assert.rejects(
+    () => readKnowledgeObjects(file, schema),
+    (error) => {
+      assert.ok(error instanceof AkpError);
+      assert.equal(error.code, "AKP_RELATIONSHIP_TARGET_MISSING");
+      return true;
+    },
+  );
 });
 
 async function writeObjects(objects: KnowledgeObject[]): Promise<string> {
@@ -56,10 +66,7 @@ async function writeObjects(objects: KnowledgeObject[]): Promise<string> {
   return file;
 }
 
-function object(
-  id: string,
-  overrides: Partial<KnowledgeObject> = {},
-): KnowledgeObject {
+function object(id: string, overrides: Partial<KnowledgeObject> = {}): KnowledgeObject {
   return {
     id,
     type: "module",

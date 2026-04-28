@@ -31,10 +31,12 @@ export interface Source {
   source_kind: string;
   uri: string;
   range?: SourceRange | undefined;
-  hash?: {
-    algorithm: "sha256" | "sha1";
-    value: string;
-  } | undefined;
+  hash?:
+    | {
+        algorithm: "sha256" | "sha1";
+        value: string;
+      }
+    | undefined;
 }
 
 export interface Relationship {

@@ -23,7 +23,10 @@ export const relationshipCategorySchema = z.enum([
 export const sourceSchema = z.object({
   source_kind: z.string().min(1),
   uri: z.string().min(1),
-  range: z.object({ kind: z.string().min(1) }).catchall(z.unknown()).optional(),
+  range: z
+    .object({ kind: z.string().min(1) })
+    .catchall(z.unknown())
+    .optional(),
   hash: z
     .object({
       algorithm: z.enum(["sha256", "sha1"]),

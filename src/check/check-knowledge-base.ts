@@ -8,7 +8,9 @@ export interface CheckKnowledgeBaseResult {
   relationship_types: string[];
 }
 
-export async function checkKnowledgeBase(startDir = process.cwd()): Promise<CheckKnowledgeBaseResult> {
+export async function checkKnowledgeBase(
+  startDir = process.cwd(),
+): Promise<CheckKnowledgeBaseResult> {
   const project = await loadProject(startDir);
   const objects = await readKnowledgeObjects(project.objectsPath, project.schema);
 
