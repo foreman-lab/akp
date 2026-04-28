@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.11] - 2026-04-28
+
+### Added
+
+- **`tsRepoExtractor` now emits `command` objects** in addition to `module` objects. Scans `<rootDir>/src/cli/index.ts` and regex-matches commander-style `program.command("...")` calls; each match yields one `command` knowledge object with `attributes.command` set to the command name.
+- `TsRepoDependencies.readFile` injection seam (mirrors the existing `readdir` seam) so future tests can exercise CLI-file read failures without filesystem permission gymnastics.
+- Fixture `tests/fixtures/ts-tiny-repo/src/cli/index.ts` declaring `greet` and `farewell` commands; existing module-level strict-equality test updated to include the resulting `module.cli`.
+- Schema entry for `command` in the fixture's `code.yaml` (`required_attributes: [command]`).
+
+### Internal
+
+- **Second strict-TDD cycle on the project.** Red: failing assertion `deepEqual(ids, ["command.farewell", "command.greet"])` against zero-emitted commands. Green: minimum impl change — `extract()` is now an async generator that yields modules then commands; `extractCommands()` reads the CLI file once, regex-matches, dedupes, and yields. One mid-cycle false-positive surfaced and was fixed: my fixture's own comment contained the literal `program.command("...")` string, which the regex picked up; rewording the comment closed the loop without weakening the regex.
+- Test count 29 → 30.
+- Dogfood against the AKP self-pack: `akp refresh --dry-run` now reports `added_count: 22` (10 modules + 12 commands from the project's own CLI), `preserved_count: 17`, identity-based merge still leaving every human-authored object untouched.
+
 ## [0.1.0-alpha.10] - 2026-04-28
 
 ### Fixed

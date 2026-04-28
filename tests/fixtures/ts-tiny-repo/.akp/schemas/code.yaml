@@ -4,5 +4,10 @@ object_types:
     description: Top-level feature directory under src/.
     required_attributes:
       - paths
+  command:
+    kind: fact
+    description: CLI command declared via commander's program.command(...).
+    required_attributes:
+      - command
 
 relationship_types: {}

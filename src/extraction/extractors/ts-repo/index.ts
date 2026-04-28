@@ -1,4 +1,4 @@
-import { readdir as fsReaddir } from "node:fs/promises";
+import { readdir as fsReaddir, readFile as fsReadFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -20,27 +20,34 @@ const EXTRACTOR_ID = "ts-repo";
 export interface TsRepoDependencies {
   /** Defaults to `node:fs/promises.readdir` with `{withFileTypes: true}`. */
   readdir?: (path: string, options: { withFileTypes: true }) => Promise<Dirent[]>;
+  /** Defaults to `node:fs/promises.readFile` with utf8 encoding. */
+  readFile?: (path: string, encoding: "utf8") => Promise<string>;
 }
 
 /**
- * Extractor for TypeScript repositories. Today it emits one `module` object
- * per top-level directory under `<rootDir>/src/`. Future TDD cycles add
- * `command`, `function`, `class`, `port`, `use_case` and the corresponding
- * relationships.
+ * Extractor for TypeScript repositories. Today it emits:
+ *  - one `module` object per top-level directory under `<rootDir>/src/`
+ *  - one `command` object per `program.command("...")` call in
+ *    `<rootDir>/src/cli/index.ts` (commander-style CLI declarations)
+ *
+ * Future TDD cycles add `function`, `class`, `port`, `use_case` and the
+ * corresponding relationships.
  */
 export function tsRepoExtractor(deps: TsRepoDependencies = {}): SourceExtractor {
   const readdir = deps.readdir ?? defaultReaddir;
+  const readFile = deps.readFile ?? defaultReadFile;
   return {
     describe(): ExtractorDescriptor {
       return {
         id: EXTRACTOR_ID,
         description:
-          "Extracts module objects from top-level directories under src/ in a TypeScript repo.",
-        produces_types: ["module"],
+          "Extracts module and command objects from a TypeScript repo (src/ directories and src/cli/index.ts program.command() calls).",
+        produces_types: ["module", "command"],
       };
     },
-    extract(context: SourceExtractorContext): AsyncIterable<KnowledgeObject> {
-      return extractModules(context, readdir);
+    async *extract(context: SourceExtractorContext): AsyncIterable<KnowledgeObject> {
+      yield* extractModules(context, readdir);
+      yield* extractCommands(context, readFile);
     },
   };
 }
@@ -50,6 +57,81 @@ async function defaultReaddir(
   options: { withFileTypes: true },
 ): Promise<Dirent[]> {
   return fsReaddir(pathArg, options);
+}
+
+async function defaultReadFile(pathArg: string, encoding: "utf8"): Promise<string> {
+  return fsReadFile(pathArg, encoding);
+}
+
+const COMMAND_PATTERN = /\bprogram\s*\.\s*command\s*\(\s*["']([^"']+)["']/g;
+const CLI_FILE_RELATIVE = path.join("src", "cli", "index.ts");
+
+async function* extractCommands(
+  context: SourceExtractorContext,
+  readFile: NonNullable<TsRepoDependencies["readFile"]>,
+): AsyncIterable<KnowledgeObject> {
+  const cliPath = path.join(context.rootDir, CLI_FILE_RELATIVE);
+
+  let content: string;
+  try {
+    content = await readFile(cliPath, "utf8");
+  } catch (error: unknown) {
+    const nodeError = error as NodeJS.ErrnoException;
+    if (nodeError.code === "ENOENT") {
+      return;
+    }
+    throw error;
+  }
+
+  const now = new Date().toISOString();
+  const seen = new Set<string>();
+  let match: RegExpExecArray | null;
+  while ((match = COMMAND_PATTERN.exec(content)) !== null) {
+    const commandName = match[1];
+    if (commandName === undefined || seen.has(commandName)) {
+      continue;
+    }
+    seen.add(commandName);
+    yield buildCommandObject(commandName, context.rootDir, context.manifest, now);
+  }
+}
+
+function buildCommandObject(
+  name: string,
+  rootDir: string,
+  manifest: Manifest,
+  now: string,
+): KnowledgeObject {
+  return {
+    id: `command.${name}`,
+    type: "command",
+    kind: "fact",
+    title: name,
+    summary: `CLI command: ${name}`,
+    attributes: {
+      command: name,
+    },
+    relationships: [],
+    sources: [
+      {
+        source_kind: "file",
+        uri: pathToFileURL(path.join(rootDir, CLI_FILE_RELATIVE)).href,
+      },
+    ],
+    classification: manifest.security.default_classification,
+    exposure: manifest.security.default_exposure,
+    provenance: {
+      generated_by: EXTRACTOR_ID,
+      generated_at: now,
+      confidence: "mechanical",
+      verified_against: [],
+    },
+    freshness: {
+      last_verified: now,
+      status: "fresh",
+    },
+    review_state: "accepted",
+  };
 }
 
 async function* extractModules(

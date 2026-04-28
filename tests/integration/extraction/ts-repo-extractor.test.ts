@@ -35,7 +35,7 @@ test("ts-repo extractor emits one 'module' object per top-level directory under 
   const modules = objects.filter((object) => object.type === "module");
   const ids = modules.map((object) => object.id).sort();
 
-  assert.deepEqual(ids, ["module.alpha", "module.beta"]);
+  assert.deepEqual(ids, ["module.alpha", "module.beta", "module.cli"]);
 });
 
 test("ts-repo extractor stamps provenance.generated_by with the extractor id and confidence 'mechanical'", async () => {
@@ -168,6 +168,37 @@ test("ts-repo extractor returns no objects when <rootDir>/src does not exist", a
     assert.equal(objects.length, 0);
   } finally {
     await rm(emptyRoot, { recursive: true, force: true });
+  }
+});
+
+test("ts-repo extractor emits one 'command' object per program.command(...) call in src/cli", async () => {
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor();
+
+  const commands: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: project.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "command") {
+      commands.push(object);
+    }
+  }
+
+  const ids = commands.map((object) => object.id).sort();
+  assert.deepEqual(ids, ["command.farewell", "command.greet"]);
+
+  for (const command of commands) {
+    assert.equal(command.kind, "fact");
+    assert.ok(
+      command.provenance.generated_by === "ts-repo" ||
+        command.provenance.generated_by.startsWith("ts-repo:"),
+    );
+    assert.equal(command.provenance.confidence, "mechanical");
+    const commandAttr = command.attributes["command"];
+    assert.equal(typeof commandAttr, "string");
+    assert.ok(typeof commandAttr === "string" && commandAttr.length > 0);
   }
 });
 
