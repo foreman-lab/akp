@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.2] - 2026-04-28
+
+### Fixed
+
+- `CLAUDE.md` no longer claims `kysely` is part of the storage stack (it was removed in `0.1.0-alpha.1` but the architecture section was not updated).
+
+### Added
+
+- `npm run format` / `npm run format:check` and `npm run lint` (with `--max-warnings=0`) documented in `CLAUDE.md`.
+
+## [0.1.0-alpha.1] - 2026-04-28
+
 ### Added
 
 - Prettier configuration (`.prettierrc.json`, `.prettierignore`).

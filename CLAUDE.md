@@ -9,7 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run check` — type-check both `tsconfig.json` (src) and `tsconfig.test.json` (src + tests) with `--noEmit`. CI runs this; run it locally before committing.
 - `npm test` — `pretest` first compiles tests via `tsconfig.test.json` into `dist-tests/`, then `node --test "dist-tests/tests/**/*.test.js"`. Tests run against compiled JS, not TS sources.
 - Single test: `npm run pretest && node --test dist-tests/tests/unit/core/protocol/<name>.test.js` (compile first, then point `node --test` at the compiled file).
-- `npm run lint` — eslint over the repo.
+- `npm run lint` — `eslint . --max-warnings=0` (warnings-as-errors). Flat config in `eslint.config.js` uses typescript-eslint's type-checked rules + `import/order`.
+- `npm run format` / `npm run format:check` — Prettier; rules in `.prettierrc.json`, ignores in `.prettierignore`.
 - `npm start:mcp` — start the read-only MCP server from the built CLI (`node dist/cli/index.js mcp`). Must `npm run build` first.
 
 Node >= 20 is required. `package.json` is `"type": "module"` with NodeNext resolution, so intra-repo imports use `.js` extensions even when authored as `.ts`.
@@ -26,7 +27,7 @@ AKP (Artifact Knowledge Protocol) has **two surfaces** over the same canonical s
 
 - `.akp/objects.jsonl` is the **canonical authored** object source (committed).
 - `.akp/schemas/*.yaml` defines domain object/relationship types referenced by the manifest.
-- `.akp-local/akp.sqlite` is the **generated** local query store (gitignored). All read verbs go through `src/store/sqlite/sqlite-store.ts` (better-sqlite3 + kysely). `src/store/ensure-store-built.ts` is the path query commands use to lazily (re)build the SQLite store from the canonical JSONL when stale.
+- `.akp-local/akp.sqlite` is the **generated** local query store (gitignored). All read verbs go through `src/store/sqlite/sqlite-store.ts` (better-sqlite3, with FTS5 for lookup). `src/store/ensure-store-built.ts` is the path query commands use to lazily (re)build the SQLite store from the canonical JSONL when stale.
 
 **Protocol model.** Every knowledge object conforms to `KnowledgeObject` in `src/core/protocol/types.ts`: a typed envelope with `kind` (one of `fact | convention | procedure`), per-object `classification` (`public | internal | restricted | confidential`), `exposure` (`committed | local-only | ephemeral`), `provenance`, `freshness`, and `review_state`. Zod schemas in `src/core/protocol/schema.ts` validate this; the validator is shared between `check`, `build`, and ingest. When changing the envelope, update both `types.ts` and `schema.ts` together.
 
@@ -45,4 +46,4 @@ AKP (Artifact Knowledge Protocol) has **two surfaces** over the same canonical s
 
 ## Reference docs
 
-`docs/protocol-v0.1.md` is the authoritative spec for object kinds, the universal envelope, and the read/authoring verbs. `docs/architecture.md` and `docs/security.md` cover the surface model and the classification/exposure posture (read-only by default, fail-closed when exposure is unclear). Consult these before changing protocol shapes or the MCP server's exposed verbs.
+`docs/protocol-v0.1.md` is the authoritative spec for object kinds, the universal envelope, and the read/authoring verbs. `docs/architecture.md` and `docs/security.md` cover the surface model and the classification/exposure posture (read-only by default, fail-closed when exposure is unclear). `CHANGELOG.md` (Keep-a-Changelog) records every shipped patch. Consult these before changing protocol shapes or the MCP server's exposed verbs.
