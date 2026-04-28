@@ -2,6 +2,14 @@ import { loadProject } from "../core/config/load-project.js";
 import { defaultExtractors } from "../extraction/registry.js";
 import { makeRefresh } from "../extraction/use-cases/refresh.js";
 import { makeJsonlCanonicalStore } from "../knowledge/read-objects.js";
+import {
+  makeBriefKnowledge,
+  makeDescribeKnowledgeBase,
+  makeGetFreshness,
+  makeGetNeighbors,
+  makeGetObject,
+  makeLookupKnowledge,
+} from "../query/use-cases/index.js";
 import { ensureStoreBuilt } from "../store/ensure-store-built.js";
 import { SqliteStore } from "../store/sqlite/sqlite-store.js";
 
@@ -9,13 +17,26 @@ import type { ProjectContext } from "../core/protocol/types.js";
 import type { SourceExtractor } from "../extraction/source-extractor.js";
 import type { RefreshUseCase } from "../extraction/use-cases/refresh.js";
 import type { CanonicalStore } from "../knowledge/read-objects.js";
+import type {
+  BriefKnowledgeUseCase,
+  DescribeKnowledgeBaseUseCase,
+  GetFreshnessUseCase,
+  GetNeighborsUseCase,
+  GetObjectUseCase,
+  LookupKnowledgeUseCase,
+} from "../query/use-cases/index.js";
 import type { IndexedStore } from "../store/sqlite/sqlite-store.js";
 
 /**
- * The set of use cases the inbound adapters (CLI, MCP) consume. Read use
- * cases land here in a follow-up commit; today only `refresh` is wired.
+ * The set of use cases the inbound adapters (CLI, MCP) consume.
  */
 export interface UseCases {
+  describe: DescribeKnowledgeBaseUseCase;
+  get: GetObjectUseCase;
+  lookup: LookupKnowledgeUseCase;
+  neighbors: GetNeighborsUseCase;
+  freshness: GetFreshnessUseCase;
+  brief: BriefKnowledgeUseCase;
   refresh: RefreshUseCase;
 }
 
@@ -81,12 +102,22 @@ export async function buildContainer(
     },
   });
 
+  const useCases: UseCases = {
+    describe: makeDescribeKnowledgeBase(project),
+    get: makeGetObject(indexed),
+    lookup: makeLookupKnowledge(indexed),
+    neighbors: makeGetNeighbors(indexed),
+    freshness: makeGetFreshness(project, indexed),
+    brief: makeBriefKnowledge(indexed),
+    refresh,
+  };
+
   return {
     project,
     canonical,
     indexed,
     extractors,
-    useCases: { refresh },
+    useCases,
     dispose() {
       if (initialized) {
         indexed.close();

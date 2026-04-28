@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.14] - 2026-04-28
+
+### Added
+
+- **Six read use-case factories** in `src/query/use-cases/index.ts`: `makeDescribeKnowledgeBase`, `makeGetObject`, `makeLookupKnowledge`, `makeGetNeighbors`, `makeGetFreshness`, `makeBriefKnowledge`. Each takes ports as constructor deps and returns a typed `{execute(input?): result}` object. Result types and inputs all exported.
+- 7 use-case unit tests in `tests/unit/query/use-cases.test.ts` exercising each factory against fake `IndexedStore` / `ProjectContext` ports (TDD red→green: TS2307 was the failing-import red signal before the factories were written).
+- `Container.useCases` now exposes the six read use cases plus the existing `refresh`.
+
+### Changed
+
+- **`akp` CLI** verbs `describe`, `lookup`, `get`, `neighbors`, `brief`, `freshness` no longer call legacy free functions; each now `await buildContainer(cwd, {requireBuiltStore})` then `useCases.<verb>.execute(...)` inside a try/finally that disposes. Read verbs preserve `AKP_STORE_NOT_BUILT` via `requireBuiltStore: true`; `describe` doesn't (works without a build, like before).
+- **MCP server** holds **one** container for the lifetime of the stdio process — built once at `startMcpServer` start, disposed on `transport.onclose`. Previously the legacy free functions opened/closed a fresh SQLite handle per tool call.
+- E2E test `tests/integration/query/query-before-build.test.ts` now exercises the migration target (`buildContainer` with `requireBuiltStore: true`) instead of the deleted legacy `lookupKnowledge`.
+
+### Removed
+
+- `src/query/query-knowledge-base.ts` — the 79-line god-file with six functions sharing a copy-pasted `new SqliteStore → initialize → try → method → finally close` template. All six callers (CLI + MCP + 2 tests) migrated to the use-case + container pattern.
+
+### Internal
+
+- This is **steps 2 + 3 + 4 + 5** of the pre-cycle-4 hex-architecture refactor (started in `0.1.0-alpha.13`). `build/`, `check/`, `init/` migration is the remaining step (`0.1.0-alpha.15`).
+- Test count 30 → 37.
+
 ## [0.1.0-alpha.13] - 2026-04-28
 
 ### Added

@@ -2,19 +2,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-import {
-  briefKnowledge,
-  describeKnowledgeBase,
-  getFreshness,
-  getNeighbors,
-  getObject,
-  lookupKnowledge,
-} from "../query/query-knowledge-base.js";
+import { buildContainer } from "../runtime/build-container.js";
 
 export async function startMcpServer(): Promise<void> {
+  const container = await buildContainer(process.cwd());
+
   const server = new McpServer({
     name: "akp",
-    version: "0.1.0-alpha.0",
+    version: "0.1.0-alpha.14",
   });
 
   server.registerTool(
@@ -23,7 +18,7 @@ export async function startMcpServer(): Promise<void> {
       title: "Describe AKP",
       description: "Describe the active Artifact Knowledge Base schema and capabilities.",
     },
-    async () => jsonResult(await describeKnowledgeBase()),
+    () => jsonResult(container.useCases.describe.execute()),
   );
 
   server.registerTool(
@@ -36,7 +31,7 @@ export async function startMcpServer(): Promise<void> {
         limit: z.number().int().positive().max(50).default(5),
       },
     },
-    async ({ intent, limit }) => jsonResult(await lookupKnowledge(intent, limit)),
+    ({ intent, limit }) => jsonResult(container.useCases.lookup.execute({ intent, limit })),
   );
 
   server.registerTool(
@@ -48,7 +43,7 @@ export async function startMcpServer(): Promise<void> {
         id: z.string().min(1),
       },
     },
-    async ({ id }) => jsonResult(await getObject(id)),
+    ({ id }) => jsonResult(container.useCases.get.execute({ id })),
   );
 
   server.registerTool(
@@ -61,7 +56,7 @@ export async function startMcpServer(): Promise<void> {
         limit: z.number().int().positive().max(100).default(20),
       },
     },
-    async ({ id, limit }) => jsonResult(await getNeighbors(id, limit)),
+    ({ id, limit }) => jsonResult(container.useCases.neighbors.execute({ id, limit })),
   );
 
   server.registerTool(
@@ -74,7 +69,7 @@ export async function startMcpServer(): Promise<void> {
         limit: z.number().int().positive().max(20).default(5),
       },
     },
-    async ({ scope, limit }) => jsonResult(await briefKnowledge(scope, limit)),
+    ({ scope, limit }) => jsonResult(container.useCases.brief.execute({ scope, limit })),
   );
 
   server.registerTool(
@@ -83,10 +78,14 @@ export async function startMcpServer(): Promise<void> {
       title: "Check AKP Freshness",
       description: "Summarize freshness status for the local AKP store.",
     },
-    async () => jsonResult(await getFreshness()),
+    () => jsonResult(container.useCases.freshness.execute()),
   );
 
-  await server.connect(new StdioServerTransport());
+  const transport = new StdioServerTransport();
+  transport.onclose = (): void => {
+    container.dispose();
+  };
+  await server.connect(transport);
 }
 
 function jsonResult(value: unknown) {

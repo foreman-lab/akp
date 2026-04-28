@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildKnowledgeBase } from "../../../src/build/build-knowledge-base.js";
-import { lookupKnowledge } from "../../../src/query/query-knowledge-base.js";
+import { buildContainer } from "../../../src/runtime/build-container.js";
 import { withTempFixture } from "../../helpers/temp-project.js";
 
 test("builds and queries the example AKP knowledge base", async () => {
@@ -13,7 +13,12 @@ test("builds and queries the example AKP knowledge base", async () => {
     assert.equal(result.object_count, 3);
     assert.equal(result.relationship_count, 2);
 
-    const lookup = await lookupKnowledge("checkout", 5, exampleRoot);
-    assert.ok(lookup.some((item) => item.object.id === "module.checkout"));
+    const container = await buildContainer(exampleRoot);
+    try {
+      const lookup = container.useCases.lookup.execute({ intent: "checkout", limit: 5 });
+      assert.ok(lookup.some((item) => item.object.id === "module.checkout"));
+    } finally {
+      container.dispose();
+    }
   });
 });

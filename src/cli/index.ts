@@ -6,14 +6,6 @@ import { checkKnowledgeBase } from "../check/check-knowledge-base.js";
 import { AkpError } from "../core/errors/akp-error.js";
 import { defaultExtractors } from "../extraction/registry.js";
 import { initAkp } from "../init/init-akp.js";
-import {
-  briefKnowledge,
-  describeKnowledgeBase,
-  getFreshness,
-  getNeighbors,
-  getObject,
-  lookupKnowledge,
-} from "../query/query-knowledge-base.js";
 import { buildContainer } from "../runtime/build-container.js";
 
 import { parsePositiveInt } from "./parse-options.js";
@@ -23,7 +15,7 @@ const program = new Command();
 program
   .name("akp")
   .description("Artifact Knowledge Protocol command line tools")
-  .version("0.1.0-alpha.13");
+  .version("0.1.0-alpha.14");
 
 program
   .command("init")
@@ -50,7 +42,12 @@ program
   .command("describe")
   .description("Describe the active AKP artifact knowledge base")
   .action(async () => {
-    printJson(await describeKnowledgeBase());
+    const container = await buildContainer(process.cwd());
+    try {
+      printJson(container.useCases.describe.execute());
+    } finally {
+      container.dispose();
+    }
   });
 
 program
@@ -64,7 +61,12 @@ program
     5,
   )
   .action(async (intent: string, options: { limit: number }) => {
-    printJson(await lookupKnowledge(intent, options.limit));
+    const container = await buildContainer(process.cwd(), { requireBuiltStore: true });
+    try {
+      printJson(container.useCases.lookup.execute({ intent, limit: options.limit }));
+    } finally {
+      container.dispose();
+    }
   });
 
 program
@@ -72,7 +74,12 @@ program
   .description("Get one AKP object by id")
   .argument("<id>", "AKP object id")
   .action(async (id: string) => {
-    printJson(await getObject(id));
+    const container = await buildContainer(process.cwd(), { requireBuiltStore: true });
+    try {
+      printJson(container.useCases.get.execute({ id }));
+    } finally {
+      container.dispose();
+    }
   });
 
 program
@@ -86,7 +93,12 @@ program
     20,
   )
   .action(async (id: string, options: { limit: number }) => {
-    printJson(await getNeighbors(id, options.limit));
+    const container = await buildContainer(process.cwd(), { requireBuiltStore: true });
+    try {
+      printJson(container.useCases.neighbors.execute({ id, limit: options.limit }));
+    } finally {
+      container.dispose();
+    }
   });
 
 program
@@ -100,14 +112,24 @@ program
     5,
   )
   .action(async (scope: string, options: { limit: number }) => {
-    printJson(await briefKnowledge(scope, options.limit));
+    const container = await buildContainer(process.cwd(), { requireBuiltStore: true });
+    try {
+      printJson(container.useCases.brief.execute({ scope, limit: options.limit }));
+    } finally {
+      container.dispose();
+    }
   });
 
 program
   .command("freshness")
   .description("Summarize freshness status for the local AKP store")
   .action(async () => {
-    printJson(await getFreshness());
+    const container = await buildContainer(process.cwd(), { requireBuiltStore: true });
+    try {
+      printJson(container.useCases.freshness.execute());
+    } finally {
+      container.dispose();
+    }
   });
 
 program
