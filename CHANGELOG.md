@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.25] - 2026-04-28
+
+### Changed
+
+- Self-pack schema (`.akp/schemas/code.yaml`) declares the new `use_case` object_type so `npm run dev -- refresh -e ts-repo` no longer fails with `AKP_OBJECT_TYPE_UNKNOWN` when the extractor emits use_case objects for this repo's own `src/{init,build,query,extraction}/use-cases/` factories. Pure data/schema patch — no code change.
+
 ## [0.1.0-alpha.24] - 2026-04-28
 
 ### Added

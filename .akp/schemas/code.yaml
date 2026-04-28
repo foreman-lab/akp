@@ -25,6 +25,11 @@ object_types:
     description: Structured task guidance for AKP development.
     required_attributes:
       - steps
+  use_case:
+    kind: fact
+    description: Application use case factory (`make<Name>`) under src/**/use-cases/.
+    required_attributes:
+      - factory
 
 relationship_types:
   owns:
