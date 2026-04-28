@@ -28,11 +28,7 @@ class FakeFileSystem implements FileSystemPort {
     }
   }
 
-  async writeFile(
-    target: string,
-    content: string,
-    opts?: { flag?: "wx" | "w" },
-  ): Promise<void> {
+  async writeFile(target: string, content: string, opts?: { flag?: "wx" | "w" }): Promise<void> {
     if (opts?.flag === "wx" && this.files.has(target)) {
       const error = new Error(`EEXIST: file already exists, open '${target}'`);
       (error as NodeJS.ErrnoException).code = "EEXIST";

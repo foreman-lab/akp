@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.18] - 2026-04-28
+
+### Fixed
+
+- Prettier formatting catch-up on `tests/unit/init/use-cases.test.ts`. Prettier's auto-fix ran after the RED commit (`df09ee7`) and reformatted a multi-line `writeFile` signature to fit on one line, but the GREEN impl commit (`42de555`) didn't include that change. CI would have failed `format:check` on either commit. This commit aligns the committed file with the working-tree formatting. Process note: when split-committing TDD pairs, run `format:check` between commits and fold any formatting catch-ups into whichever commit owns the file.
+
 ## [0.1.0-alpha.17] - 2026-04-28
 
 ### Added
