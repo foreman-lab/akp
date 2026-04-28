@@ -240,14 +240,35 @@ async function* extractUseCases(
 
   for (const filePath of files.sort()) {
     const content = await readFile(filePath, "utf8");
+    const portTargets = extractImportedPortTargets(content);
     for (const match of content.matchAll(factoryPattern)) {
       const factoryName = `make${match[1]}`;
       const id = `use_case.${kebabCase(match[1]!)}`;
       if (seen.has(id)) continue;
       seen.add(id);
-      yield buildUseCaseObject(id, factoryName, filePath, context, now);
+      yield buildUseCaseObject(id, factoryName, filePath, context, now, portTargets);
     }
   }
+}
+
+// Scans `import` statements for symbols matching `<Name>Port` and returns
+// the corresponding `port.<kebab>` ids in a stable, deduplicated order.
+// Coarse approximation: every factory in the file inherits every imported
+// port. AST-based per-factory dependency analysis is deferred.
+function extractImportedPortTargets(content: string): string[] {
+  const importPattern = /^import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+["'][^"']+["']/gm;
+  const targets = new Set<string>();
+  for (const match of content.matchAll(importPattern)) {
+    const inside = match[1]!;
+    for (const raw of inside.split(",")) {
+      const symbol = raw.replace(/^\s*type\s+/, "").trim();
+      const portMatch = /^(\w+)Port$/.exec(symbol);
+      if (portMatch) {
+        targets.add(`port.${kebabCase(portMatch[1]!)}`);
+      }
+    }
+  }
+  return [...targets].sort();
 }
 
 function buildUseCaseObject(
@@ -256,6 +277,7 @@ function buildUseCaseObject(
   filePath: string,
   context: SourceExtractorContext,
   now: string,
+  portTargets: string[],
 ): KnowledgeObject {
   return {
     id,
@@ -266,7 +288,11 @@ function buildUseCaseObject(
     attributes: {
       factory: factoryName,
     },
-    relationships: [],
+    relationships: portTargets.map((target) => ({
+      type: "uses",
+      category: "dependency",
+      target,
+    })),
     sources: [
       {
         source_kind: "file",

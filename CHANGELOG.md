@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.29] - 2026-04-28
+
+### Added
+
+- **`ts-repo` extractor now attaches `uses` relationships from each emitted `use_case` to the ports it imports.** For every `<Name>Port` symbol that appears in an `import { ... } from "..."` statement in a use-case file, every factory in that file inherits a relationship `{type: "uses", category: "dependency", target: "port.<kebab>"}`. First step in turning the AKB from a flat list into a knowledge graph. Coarse approximation: every factory in a file inherits every imported port — AST-aware per-factory dependency analysis is deferred. The downstream `validateRelationshipTargets` (run after each extract pass) catches any dangling `port.*` target the extractor produces but the canonical/extractor pair did not.
+
+### Internal
+
+- Phase 3 cycle 4 third increment. RED (`a2f1352`) → GREEN (this commit). 52/52 tests pass; the new `extractImportedPortTargets` helper scans `import { ... type FooPort }` syntax (with or without the `type` modifier) and dedupes.
+
 ## [0.1.0-alpha.28] - 2026-04-28
 
 ### Fixed
