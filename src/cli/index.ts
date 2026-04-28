@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { Command } from "commander";
 
-import { AkpError } from "../core/errors/akp-error.js";
+import { AppError } from "../core/errors/app-error.js";
 import { defaultExtractors } from "../extraction/registry.js";
 import { nodeFileSystem } from "../init/adapters/node-fs.js";
 import { makeInitKnowledgeBase } from "../init/use-cases/index.js";
@@ -16,7 +16,7 @@ const program = new Command();
 program
   .name("akp")
   .description("Artifact Knowledge Protocol command line tools")
-  .version("0.1.0-alpha.20");
+  .version("0.1.0-alpha.21");
 
 program
   .command("init")
@@ -185,7 +185,7 @@ program
   });
 
 program.parseAsync(process.argv).catch((error: unknown) => {
-  if (error instanceof AkpError) {
+  if (error instanceof AppError) {
     console.error(`${error.code}: ${error.message}`);
     if (error.details) {
       console.error(JSON.stringify(error.details, null, 2));

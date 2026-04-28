@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { AkpError } from "../../../src/core/errors/akp-error.js";
+import { AppError } from "../../../src/core/errors/app-error.js";
 import { makeRefresh } from "../../../src/extraction/use-cases/refresh.js";
 import { makeJsonlCanonicalStore } from "../../../src/knowledge/read-objects.js";
 import { SqliteStore } from "../../../src/store/sqlite/sqlite-store.js";
@@ -44,7 +44,7 @@ test("refresh fails when no extractors are registered", async () => {
     await assert.rejects(
       () => refresh.execute(),
       (error) => {
-        assert.ok(error instanceof AkpError);
+        assert.ok(error instanceof AppError);
         assert.equal(error.code, "AKP_NO_EXTRACTORS_REGISTERED");
         return true;
       },
@@ -67,7 +67,7 @@ test("refresh fails with AKP_EXTRACTOR_UNKNOWN when --extractor id is not regist
     await assert.rejects(
       () => refresh.execute({ extractorId: "missing" }),
       (error) => {
-        assert.ok(error instanceof AkpError);
+        assert.ok(error instanceof AppError);
         assert.equal(error.code, "AKP_EXTRACTOR_UNKNOWN");
         return true;
       },
@@ -90,7 +90,7 @@ test("refresh fails with AKP_EXTRACTOR_AMBIGUOUS when multiple extractors and no
     await assert.rejects(
       () => refresh.execute(),
       (error) => {
-        assert.ok(error instanceof AkpError);
+        assert.ok(error instanceof AppError);
         assert.equal(error.code, "AKP_EXTRACTOR_AMBIGUOUS");
         return true;
       },
@@ -220,7 +220,7 @@ test("refresh fails with AKP_EXTRACTOR_PRODUCED_INVALID_OBJECT when extractor yi
     await assert.rejects(
       () => refresh.execute(),
       (error) => {
-        assert.ok(error instanceof AkpError);
+        assert.ok(error instanceof AppError);
         assert.equal(error.code, "AKP_EXTRACTOR_PRODUCED_INVALID_OBJECT");
         return true;
       },

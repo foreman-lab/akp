@@ -1,10 +1,10 @@
-export class AkpError extends Error {
+export class AppError extends Error {
   constructor(
     public readonly code: string,
     message: string,
     public readonly details?: unknown,
   ) {
     super(message);
-    this.name = "AkpError";
+    this.name = "AppError";
   }
 }

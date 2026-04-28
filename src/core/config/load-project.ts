@@ -3,7 +3,7 @@ import path from "node:path";
 
 import YAML from "yaml";
 
-import { AkpError } from "../errors/akp-error.js";
+import { AppError } from "../errors/app-error.js";
 import { manifestSchema, packSchemaSchema } from "../protocol/schema.js";
 
 import { AKP_DATABASE_FILE, AKP_DIR, AKP_LOCAL_DIR, findProjectRoot } from "./paths.js";
@@ -14,7 +14,7 @@ async function readYaml(filePath: string): Promise<unknown> {
   try {
     return YAML.parse(await readFile(filePath, "utf8"));
   } catch (error) {
-    throw new AkpError("AKP_CONFIG_READ_FAILED", `Unable to read ${filePath}`, error);
+    throw new AppError("AKP_CONFIG_READ_FAILED", `Unable to read ${filePath}`, error);
   }
 }
 
@@ -26,7 +26,7 @@ export async function loadProject(startDir = process.cwd()): Promise<ProjectCont
 
   const manifestResult = manifestSchema.safeParse(await readYaml(manifestPath));
   if (!manifestResult.success) {
-    throw new AkpError(
+    throw new AppError(
       "AKP_MANIFEST_INVALID",
       "Invalid .akp/manifest.yaml",
       manifestResult.error.format(),
@@ -37,7 +37,7 @@ export async function loadProject(startDir = process.cwd()): Promise<ProjectCont
   const schemaPath = path.resolve(akpDir, manifest.schema);
   const schemaResult = packSchemaSchema.safeParse(await readYaml(schemaPath));
   if (!schemaResult.success) {
-    throw new AkpError(
+    throw new AppError(
       "AKP_SCHEMA_INVALID",
       `Invalid AKP schema at ${schemaPath}`,
       schemaResult.error.format(),

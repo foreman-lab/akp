@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { AkpError } from "../../../src/core/errors/akp-error.js";
+import { AppError } from "../../../src/core/errors/app-error.js";
 import { readKnowledgeObjects } from "../../../src/knowledge/read-objects.js";
 
 import type { KnowledgeObject, PackSchema } from "../../../src/core/protocol/types.js";
@@ -32,7 +32,7 @@ test("rejects relationship category mismatches", async () => {
   await assert.rejects(
     () => readKnowledgeObjects(file, schema),
     (error) => {
-      assert.ok(error instanceof AkpError);
+      assert.ok(error instanceof AppError);
       assert.equal(error.code, "AKP_RELATIONSHIP_CATEGORY_MISMATCH");
       return true;
     },
@@ -49,7 +49,7 @@ test("rejects relationships that point to missing objects", async () => {
   await assert.rejects(
     () => readKnowledgeObjects(file, schema),
     (error) => {
-      assert.ok(error instanceof AkpError);
+      assert.ok(error instanceof AppError);
       assert.equal(error.code, "AKP_RELATIONSHIP_TARGET_MISSING");
       return true;
     },

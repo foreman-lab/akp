@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.21] - 2026-04-28
+
+### Changed
+
+- **Renamed `AkpError` to `AppError`** and the source file `src/core/errors/akp-error.ts` to `src/core/errors/app-error.ts`, completing the naming-neutral cleanup started in `0.1.0-alpha.20`. The class name carried the project brand into every throw site; `AppError` is the saved-memory canonical example of the rule (`feedback_naming_neutral_class_types`). Error `code` strings (`AKP_*`) are constants — they stay branded per the rule. 11 source/test files updated; CLI/MCP behavior unchanged.
+
+### Internal
+
+- Pure rename, no behavior change. 42/42 tests still pass. Historical `AkpError` references in this CHANGELOG are preserved as accurate history.
+
 ## [0.1.0-alpha.20] - 2026-04-28
 
 ### Changed

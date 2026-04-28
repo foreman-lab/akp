@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { AkpError } from "../../../src/core/errors/akp-error.js";
+import { AppError } from "../../../src/core/errors/app-error.js";
 import { makeJsonlCanonicalStore } from "../../../src/knowledge/read-objects.js";
 import { SqliteStore } from "../../../src/store/sqlite/sqlite-store.js";
 
@@ -107,7 +107,7 @@ test("makeJsonlCanonicalStore.writeAll throws AKP_OBJECTS_WRITE_FAILED when the 
   await assert.rejects(
     () => canonical.writeAll([object("module.alpha")]),
     (error) => {
-      assert.ok(error instanceof AkpError);
+      assert.ok(error instanceof AppError);
       assert.equal(error.code, "AKP_OBJECTS_WRITE_FAILED");
       return true;
     },

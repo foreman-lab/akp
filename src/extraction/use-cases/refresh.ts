@@ -1,4 +1,4 @@
-import { AkpError } from "../../core/errors/akp-error.js";
+import { AppError } from "../../core/errors/app-error.js";
 import { knowledgeObjectSchema } from "../../core/protocol/schema.js";
 import {
   validateObjectAgainstPack,
@@ -54,7 +54,7 @@ export function makeRefresh(deps: RefreshDependencies): RefreshUseCase {
       })) {
         const parsed = knowledgeObjectSchema.safeParse(candidate);
         if (!parsed.success) {
-          throw new AkpError(
+          throw new AppError(
             "AKP_EXTRACTOR_PRODUCED_INVALID_OBJECT",
             `Extractor ${descriptor.id} produced an object that fails the AKP envelope schema`,
             parsed.error.format(),
@@ -102,7 +102,7 @@ function pickExtractor(
   requestedId: string | undefined,
 ): SourceExtractor {
   if (extractors.length === 0) {
-    throw new AkpError(
+    throw new AppError(
       "AKP_NO_EXTRACTORS_REGISTERED",
       "No extractors are registered. Install a domain pack or register one in the CLI before running `akp refresh`.",
     );
@@ -111,7 +111,7 @@ function pickExtractor(
   if (requestedId !== undefined) {
     const match = extractors.find((extractor) => extractor.describe().id === requestedId);
     if (!match) {
-      throw new AkpError(
+      throw new AppError(
         "AKP_EXTRACTOR_UNKNOWN",
         `No extractor registered with id "${requestedId}".`,
         { available: extractors.map((extractor) => extractor.describe().id) },
@@ -121,7 +121,7 @@ function pickExtractor(
   }
 
   if (extractors.length > 1) {
-    throw new AkpError(
+    throw new AppError(
       "AKP_EXTRACTOR_AMBIGUOUS",
       "Multiple extractors are registered; pass --extractor <id> to choose one.",
       { available: extractors.map((extractor) => extractor.describe().id) },
