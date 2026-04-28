@@ -114,6 +114,29 @@ test("makeJsonlCanonicalStore.writeAll throws AKP_OBJECTS_WRITE_FAILED when the 
   );
 });
 
+test("makeJsonlCanonicalStore.writeAll throws AKP_OBJECT_DUPLICATE before writing when input contains duplicate ids", async () => {
+  const dir = await mkdir(path.join(tmpdir(), `akp-canonical-dup-${Date.now()}-${Math.random()}`), {
+    recursive: true,
+  });
+  assert.ok(dir);
+  const file = path.join(dir, "objects.jsonl");
+  await writeFile(file, ""); // start with an empty canonical so we can detect any partial write
+  const canonical = makeJsonlCanonicalStore(file, schema);
+
+  await assert.rejects(
+    () => canonical.writeAll([object("module.alpha"), object("module.alpha", { summary: "dup" })]),
+    (error) => {
+      assert.ok(error instanceof AppError);
+      assert.equal(error.code, "AKP_OBJECT_DUPLICATE");
+      return true;
+    },
+  );
+
+  const { readFile } = await import("node:fs/promises");
+  const onDisk = await readFile(file, "utf8");
+  assert.equal(onDisk, "", "writeAll must not partially write when validation fails");
+});
+
 test("makeJsonlCanonicalStore.readAll delegates to the JSONL reader", async () => {
   const file = await writeObjects([object("module.alpha"), object("module.beta")]);
   const canonical = makeJsonlCanonicalStore(file, schema);

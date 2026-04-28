@@ -233,6 +233,67 @@ test("refresh fails with AKP_EXTRACTOR_PRODUCED_INVALID_OBJECT when extractor yi
   }
 });
 
+test("refresh fails with AKP_OBJECT_ID_COLLISION when extractor emits an id owned by a preserved object, and writes nothing", async () => {
+  const env = await setupEnv([object("module.shared", { generatedBy: "human:foreman-lab" })]);
+  try {
+    const refresh = makeRefresh({
+      canonical: env.canonical,
+      indexed: env.indexed,
+      extractors: [
+        makeFakeExtractor("ts-repo", [object("module.shared", { generatedBy: "ts-repo" })]),
+      ],
+      context: { rootDir: env.rootDir, manifest, schema },
+    });
+
+    await assert.rejects(
+      () => refresh.execute(),
+      (error) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.code, "AKP_OBJECT_ID_COLLISION");
+        const details = error.details as {
+          collisions: Array<{ id: string; preserved_owner: string; extractor_id: string }>;
+        };
+        assert.equal(details.collisions.length, 1);
+        assert.equal(details.collisions[0]?.id, "module.shared");
+        assert.equal(details.collisions[0]?.preserved_owner, "human:foreman-lab");
+        assert.equal(details.collisions[0]?.extractor_id, "ts-repo");
+        return true;
+      },
+    );
+
+    const canonicalAfter = await env.canonical.readAll();
+    assert.equal(canonicalAfter.length, 1);
+    assert.equal(canonicalAfter[0]?.provenance.generated_by, "human:foreman-lab");
+  } finally {
+    env.indexed.close();
+  }
+});
+
+test("refresh fails with AKP_OBJECT_ID_COLLISION in dry-run mode (no writes attempted)", async () => {
+  const env = await setupEnv([object("module.shared", { generatedBy: "human:foreman-lab" })]);
+  try {
+    const refresh = makeRefresh({
+      canonical: env.canonical,
+      indexed: env.indexed,
+      extractors: [
+        makeFakeExtractor("ts-repo", [object("module.shared", { generatedBy: "ts-repo" })]),
+      ],
+      context: { rootDir: env.rootDir, manifest, schema },
+    });
+
+    await assert.rejects(
+      () => refresh.execute({ dryRun: true }),
+      (error) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.code, "AKP_OBJECT_ID_COLLISION");
+        return true;
+      },
+    );
+  } finally {
+    env.indexed.close();
+  }
+});
+
 test("refresh --dry-run computes counts but writes nothing", async () => {
   const env = await setupEnv([object("module.original", { generatedBy: "ts-repo" })]);
   try {
