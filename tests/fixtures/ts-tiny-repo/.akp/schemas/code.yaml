@@ -14,5 +14,10 @@ object_types:
     description: Application use case factory (`make<Name>`) under src/**/use-cases/.
     required_attributes:
       - factory
+  port:
+    kind: fact
+    description: Outbound port declared as `export interface <Name>Port`.
+    required_attributes:
+      - interface_name
 
 relationship_types: {}

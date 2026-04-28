@@ -252,6 +252,50 @@ test("ts-repo extractor advertises 'use_case' in produces_types", () => {
   );
 });
 
+test("ts-repo extractor emits one 'port' object per exported `<Name>Port` interface under src/**/*.ts", async () => {
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor();
+
+  const ports: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: project.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "port") {
+      ports.push(object);
+    }
+  }
+
+  const ids = ports.map((object) => object.id).sort();
+  // Fixture src/alpha/ports.ts has:
+  //   ClockPort       (exported, suffix matches)        -> port.clock
+  //   LoggerPort      (exported, suffix matches)        -> port.logger
+  //   NotAPort        (exported, no Port suffix)        -> skipped
+  //   InternalPort    (not exported)                    -> skipped
+  assert.deepEqual(ids, ["port.clock", "port.logger"]);
+
+  for (const port of ports) {
+    assert.equal(port.kind, "fact");
+    assert.ok(
+      port.provenance.generated_by === "ts-repo" ||
+        port.provenance.generated_by.startsWith("ts-repo:"),
+    );
+    assert.equal(port.provenance.confidence, "mechanical");
+    const interfaceName = port.attributes["interface_name"];
+    assert.equal(typeof interfaceName, "string");
+    assert.ok(typeof interfaceName === "string" && interfaceName.endsWith("Port"));
+  }
+});
+
+test("ts-repo extractor advertises 'port' in produces_types", () => {
+  const descriptor = tsRepoExtractor().describe();
+  assert.ok(
+    descriptor.produces_types.includes("port"),
+    `produces_types must include 'port', got ${JSON.stringify(descriptor.produces_types)}`,
+  );
+});
+
 test("ts-repo extractor propagates non-ENOENT readdir failures (e.g. EACCES)", async () => {
   const project = await loadProject(FIXTURE_ROOT);
 
