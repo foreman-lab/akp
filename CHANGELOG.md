@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.13] - 2026-04-28
+
+### Added
+
+- **Composition root** at `src/runtime/build-container.ts`. `buildContainer(cwd, opts?)` loads `ProjectContext`, wires `CanonicalStore` + `IndexedStore` + extractors + use cases, and returns a single `Container` with `dispose()` for resource cleanup. The optional `requireBuiltStore` flag preserves the `AKP_STORE_NOT_BUILT` fail-fast for read paths.
+
+### Changed
+
+- `akp refresh` action no longer inlines its own wiring; uses `buildContainer(...)` and calls `container.useCases.refresh.execute(...)` inside a `try/finally` that disposes the container. Behaviorally identical (`refresh --dry-run` against the AKP self-pack still reports identity-based merge counts), but now the SQLite handle is tracked through one well-defined lifetime instead of being opened/closed inline.
+
+### Internal
+
+- This is **step 1 of the Phase 3 hex-architecture refactor** (pre-cycle-4 consolidation). Steps 2–6 will migrate the read verbs (`lookup`/`get`/`neighbors`/`brief`/`describe`/`freshness`) and the build/check verbs onto the same composition root + use-case pattern, then delete the legacy `src/query/query-knowledge-base.ts` god-file. The 11 module count under `src/` ticked from 10 → 11 because `src/runtime/` is now a top-level module — visible in the dogfood `refresh --dry-run` output (11 modules + 12 commands = 23 candidates added).
+
 ## [0.1.0-alpha.12] - 2026-04-28
 
 ### Fixed
