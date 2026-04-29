@@ -19,11 +19,11 @@ export interface McpStartOptions {
 export async function buildMcpServer(
   cwd: string,
 ): Promise<{ server: McpServer; container: Container }> {
-  const container = await buildContainer(cwd);
+  const container = await buildContainer(cwd, { requireBuiltStore: true });
 
   const server = new McpServer({
     name: "akp",
-    version: "0.1.0-alpha.30",
+    version: "0.1.0-alpha.31",
   });
 
   server.registerTool(

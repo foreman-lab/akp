@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.31] - 2026-04-29
+
+### Fixed
+
+- **MCP server now requires a built local store before serving any verb.** Codex review Finding 1 (P1): without `requireBuiltStore: true`, the SQLite store would be silently initialized empty and read tools (`akp.lookup`, `akp.get`, `akp.neighbors`, `akp.brief`, `akp.freshness`) would return zero results. An agent could treat that as authoritative absence of knowledge when the actual problem was a missing `.akp-local/akp.sqlite`. The MCP container now fails fast with `AKP_STORE_NOT_BUILT` when the store has not been compiled, matching the existing CLI read-verb posture.
+
+### Added
+
+- `src/mcp/server.ts` exports a new `buildMcpServer(cwd)` function — a test seam that returns the `{server, container}` pair without spawning the stdio transport. The thin `startMcpServer({cwd?})` wrapper now wires the stdio transport on top. Same production behavior; testability gain.
+- First MCP integration test (`tests/integration/mcp/server.test.ts`) — closes the long-standing zero-coverage gap on the MCP surface. Asserts that `buildMcpServer` against an unbuilt project rejects with `AKP_STORE_NOT_BUILT`.
+
+### Internal
+
+- RED (`6042a74`) → GREEN (this commit) TDD pair. 54/54 tests pass.
+
 ## [0.1.0-alpha.30] - 2026-04-28
 
 ### Fixed
