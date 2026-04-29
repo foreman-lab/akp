@@ -182,6 +182,9 @@ Not a release plan; a sequencing of the work.
 4. Validate on a non-code corpus. Pick one: ADRs, runbooks, the
    project's own `docs/` directory. If AKP can't represent that
    corpus well, the protocol is wrong and needs revision before
+   (First pass done 2026-04-29 against this repo's `docs/`. Findings
+   recorded in [`docs/PROTOCOL-GAPS.md`](./PROTOCOL-GAPS.md) — read
+   that file before drafting `PROTOCOL.md`.)
    anything else is built.
 
 ### Phase B — Adoption ergonomics
