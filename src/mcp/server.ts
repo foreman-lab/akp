@@ -4,8 +4,22 @@ import { z } from "zod";
 
 import { buildContainer } from "../runtime/build-container.js";
 
-export async function startMcpServer(): Promise<void> {
-  const container = await buildContainer(process.cwd());
+import type { Container } from "../runtime/build-container.js";
+
+export interface McpStartOptions {
+  /** Defaults to `process.cwd()`. Tests pass a fixture project root. */
+  cwd?: string;
+}
+
+/**
+ * Build the read-only MCP server bound to a container, but do **not** connect
+ * any transport. Exposed as a seam so tests can assert configuration errors
+ * (e.g. missing local store) without spawning a stdio transport.
+ */
+export async function buildMcpServer(
+  cwd: string,
+): Promise<{ server: McpServer; container: Container }> {
+  const container = await buildContainer(cwd);
 
   const server = new McpServer({
     name: "akp",
@@ -80,6 +94,17 @@ export async function startMcpServer(): Promise<void> {
     },
     () => jsonResult(container.useCases.freshness.execute()),
   );
+
+  return { server, container };
+}
+
+/**
+ * Build the MCP server and connect it to the stdio transport. Production
+ * entry point used by the `akp mcp` CLI verb.
+ */
+export async function startMcpServer(options: McpStartOptions = {}): Promise<void> {
+  const cwd = options.cwd ?? process.cwd();
+  const { server, container } = await buildMcpServer(cwd);
 
   const transport = new StdioServerTransport();
   // `onclose` only fires on a clean protocol close (graceful shutdown RPC or
