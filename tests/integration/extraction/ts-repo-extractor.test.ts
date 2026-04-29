@@ -325,6 +325,42 @@ test("ts-repo extractor advertises 'port' in produces_types", () => {
   );
 });
 
+test("ts-repo extractor attaches `uses` edges for ports declared inline in the same use-case file", async () => {
+  // The init use case in this very repo declares `FileSystemPort` inline
+  // in `src/init/use-cases/index.ts` instead of importing it from a
+  // sibling. A real consumer-side dogfood (`akp neighbors
+  // use_case.init-knowledge-base`) returned [] today because the
+  // import-scan misses same-file port declarations. Pin the fix.
+  const fakeFs = makeFakeSrcTree({
+    [path.posix.join("src", "alpha", "use-cases", "index.ts")]:
+      "export interface InlinePort {\n  ping(): void;\n}\n" +
+      "\n" +
+      "export function makeFoo(deps: { svc: InlinePort }) {\n" +
+      "  return { execute() { void deps; return ''; } };\n" +
+      "}\n",
+  });
+
+  const project = await loadProject(FIXTURE_ROOT);
+  const extractor = tsRepoExtractor({ readdir: fakeFs.readdir, readFile: fakeFs.readFile });
+
+  const useCases: KnowledgeObject[] = [];
+  for await (const object of extractor.extract({
+    rootDir: fakeFs.rootDir,
+    manifest: project.manifest,
+    schema: project.schema,
+  })) {
+    if (object.type === "use_case") useCases.push(object);
+  }
+
+  assert.equal(useCases.length, 1);
+  const targets = useCases[0]!.relationships.map((relationship) => relationship.target).sort();
+  assert.deepEqual(
+    targets,
+    ["port.inline"],
+    `use_case.foo must have a uses->port.inline edge from same-file InlinePort declaration`,
+  );
+});
+
 test("ts-repo extractor deduplicates port emissions when the same <Name>Port appears in multiple files", async () => {
   const fakeFs = makeFakeSrcTree({
     [path.posix.join("src", "alpha", "ports.ts")]:
