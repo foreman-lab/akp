@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 
 import { buildContainer } from "../runtime/build-container.js";
+import { VERSION } from "../runtime/version.js";
 
 import type { Container } from "../runtime/build-container.js";
 
@@ -23,7 +24,7 @@ export async function buildMcpServer(
 
   const server = new McpServer({
     name: "akp",
-    version: "0.1.0-alpha.31",
+    version: VERSION,
   });
 
   server.registerTool(

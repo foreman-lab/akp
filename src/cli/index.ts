@@ -8,15 +8,13 @@ import { defaultExtractors } from "../extraction/registry.js";
 import { nodeFileSystem } from "../init/adapters/node-fs.js";
 import { makeInitKnowledgeBase } from "../init/use-cases/index.js";
 import { buildContainer } from "../runtime/build-container.js";
+import { VERSION } from "../runtime/version.js";
 
 import { parsePositiveInt } from "./parse-options.js";
 
 const program = new Command();
 
-program
-  .name("akp")
-  .description("Artifact Knowledge Protocol command line tools")
-  .version("0.1.0-alpha.31");
+program.name("akp").description("Artifact Knowledge Protocol command line tools").version(VERSION);
 
 program
   .command("init")

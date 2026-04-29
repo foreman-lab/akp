@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.32] - 2026-04-29
+
+### Fixed
+
+- **Runtime version is now read from `package.json` at module load.** Codex review Finding 4 (P3): the CLI and MCP server each had a hardcoded version string that drifted from `package.json` whenever an alpha bump touched only one of the three. New `src/runtime/version.ts` reads `package.json` once, exports `VERSION`, and `src/cli/index.ts` + `src/mcp/server.ts` both consume the constant. Single source of truth — future bumps now require editing only `package.json` and the CHANGELOG entry.
+
+### Internal
+
+- RED (`2c271fa`) → GREEN (this commit) TDD pair. RED was an auditable TS2307 (the symbol-under-test did not exist on the prior commit). The new unit test (`tests/unit/runtime/version.test.ts`) asserts `VERSION === pkg.version` and that VERSION is a SemVer string. 55/55 tests pass.
+
 ## [0.1.0-alpha.31] - 2026-04-29
 
 ### Fixed
