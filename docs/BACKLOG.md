@@ -91,3 +91,61 @@ boundary; AST-aware per-factory dependency analysis is the long-term path.
 
 **Related code:** `src/extraction/extractors/ts-repo/index.ts`
 (`extractImportedPortTargets`).
+
+---
+
+## ts-repo extractor imposes coding conventions on the host codebase
+
+**Originated from:** Self-pack dogfood on 2026-04-29 + dialogue with the
+project owner. After running `akp refresh -e ts-repo` for the first time,
+only 1 of 4 actual ports in this repo were emitted (`port.file-system`).
+The other three (`CanonicalStore`, `IndexedStore`, `SourceExtractor`) lack
+the `<Name>Port` suffix and were silently skipped.
+
+**Ask:** Decouple the `ts-repo` default extractor from any specific TS
+coding style. Today it silently assumes:
+
+- ports use the `<Name>Port` suffix
+- use cases are `make<Name>` factory functions
+- commands are commander-style `program.command(...)` calls
+- use cases live under `src/**/use-cases/*.ts`
+
+A team using `<Name>Repository`, class-based use cases, yargs/oclif/raw
+`process.argv`, or any other idiom would silently get an empty AKB.
+That's the inverse of "pluggable reference infrastructure for AI agents"
+— it forces consumers to bend their codebase to the tool.
+
+**Possible paths (no decision yet):**
+
+1. **Manifest-driven config** — `extractors.ts-repo.port_suffixes:
+[Port, Repository, Service]`, etc. Defaults match v0.1; teams override.
+2. **Opt-in markers** — `// @akp:port`, `// @akp:use_case`, `// @akp:command`
+   above declarations. Convention-free. Self-documenting in source.
+3. **AST-based detection** — a port is whatever appears as a typed
+   dependency of a use-case factory. More accurate, materially harder to
+   implement than regex (needs `typescript` compiler API or `ts-morph`).
+4. **Pack-per-ecosystem** — accept that `ts-repo` is one opinionated
+   default and that other idioms ship their own extractors (the original
+   AKP design intent). The cost is a heavy first-time bar for adopters
+   whose codebase doesn't match any default.
+
+**Why deferred:** v0.1 ts-repo is honest about its current limits — it
+extracts what it claims to extract, no false positives. The 1-of-4 port
+coverage on this repo is a true reflection of the suffix-only contract,
+not a bug. Six cycles of regex iteration (alpha.24–30 + alpha.32) have
+shown diminishing returns; each refinement adds heuristic complexity
+without addressing the deeper question of which path above is right.
+Real-user feedback ("my codebase doesn't match your defaults — what do I
+do?") will sharpen the choice. Building for that feedback now is
+anticipating instead of responding.
+
+**Reopen when:** A real user (or a second internal codebase) reports that
+their conventions don't match ts-repo's defaults. That signal tells us
+which path is correct. Also reopen when a second built-in extractor is
+added (Java/Go/Rust/Python), at which point shared infrastructure for
+configurability vs per-extractor opinions becomes a real design question.
+
+**Related code:** `src/extraction/extractors/ts-repo/index.ts` (every
+detection regex), `tests/fixtures/ts-tiny-repo/` (would need
+configuration-flag fixtures), `docs/protocol-v0.1.md` (would need an
+"extractor configuration" section).
