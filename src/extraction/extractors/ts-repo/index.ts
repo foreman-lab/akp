@@ -240,7 +240,7 @@ async function* extractUseCases(
 
   for (const filePath of files.sort()) {
     const content = await readFile(filePath, "utf8");
-    const portTargets = extractImportedPortTargets(content);
+    const portTargets = extractFilePortTargets(content);
     for (const match of content.matchAll(factoryPattern)) {
       const factoryName = `make${match[1]}`;
       const id = `use_case.${kebabCase(match[1]!)}`;
@@ -251,13 +251,20 @@ async function* extractUseCases(
   }
 }
 
-// Scans `import` statements for symbols matching `<Name>Port` and returns
-// the corresponding `port.<kebab>` ids in a stable, deduplicated order.
-// Coarse approximation: every factory in the file inherits every imported
-// port. AST-based per-factory dependency analysis is deferred.
-function extractImportedPortTargets(content: string): string[] {
-  const importPattern = /^import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+["'][^"']+["']/gm;
+// Scans a use-case file for `<Name>Port` symbols and returns the
+// corresponding `port.<kebab>` ids in a stable, deduplicated order.
+// Sources are unioned across:
+//   1. `import { ... }` statements that bring in port-suffixed names
+//      (with or without inline `type` modifier, with or without `as` aliases).
+//   2. `export interface <Name>Port { ... }` declarations in the same file
+//      — for use cases that declare and use their port locally.
+// Coarse approximation: every factory in the file inherits every port the
+// file references this way. AST-based per-factory dependency analysis is
+// deferred (see docs/BACKLOG.md).
+function extractFilePortTargets(content: string): string[] {
   const targets = new Set<string>();
+
+  const importPattern = /^import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+["'][^"']+["']/gm;
   for (const match of content.matchAll(importPattern)) {
     const inside = match[1]!;
     for (const raw of inside.split(",")) {
@@ -271,6 +278,12 @@ function extractImportedPortTargets(content: string): string[] {
       }
     }
   }
+
+  const localPortPattern = /^export\s+interface\s+(\w+)Port\b/gm;
+  for (const match of content.matchAll(localPortPattern)) {
+    targets.add(`port.${kebabCase(match[1]!)}`);
+  }
+
   return [...targets].sort();
 }
 

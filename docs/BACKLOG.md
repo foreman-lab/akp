@@ -149,3 +149,73 @@ configurability vs per-extractor opinions becomes a real design question.
 detection regex), `tests/fixtures/ts-tiny-repo/` (would need
 configuration-flag fixtures), `docs/protocol-v0.1.md` (would need an
 "extractor configuration" section).
+
+---
+
+## `command` objects don't link to their implementing `use_case`
+
+**Originated from:** Consumer-side dogfood on 2026-04-29. `akp brief
+"how does refresh work"` returned `command.refresh` (CLI metadata) as
+the only result, with no path to `use_case.refresh` (the actual
+implementation) or `module.extraction` (the layer it belongs to). The
+graph is structurally correct but semantically shallow — depth requires
+manual navigation.
+
+**Ask:** When the ts-repo extractor emits a `command.<verb>` for a
+`program.command("verb")` declaration, also emit a relationship from
+that command to the use case it invokes. E.g. given:
+
+```ts
+program.command("refresh").action(async () => {
+  await container.useCases.refresh.execute(...);
+});
+```
+
+emit `command.refresh --implemented_by--> use_case.refresh` (or `uses`
+with category `dependency`, depending on schema preference).
+
+**Why deferred:** Detection requires more than a regex on the
+`program.command(...)` line — it needs to read the action callback's
+body to find which `useCases.<name>.execute` is invoked. Either AST-
+based (the right answer; see ts-repo conventions backlog item) or a
+brittle regex over the action body. Neither belongs in this v0.1
+iteration. The current shallow graph is honest about its limits.
+
+**Reopen when:** AST-based detection lands (would also resolve the
+deeper conventions question), or when a real consumer reports they
+need command→use_case navigation specifically.
+
+**Related code:** `src/extraction/extractors/ts-repo/index.ts`
+(`extractCommands`, would gain a use-case-name capture step).
+
+---
+
+## FTS5 lookup is brittle to morphological variants
+
+**Originated from:** Consumer-side dogfood on 2026-04-29.
+`akp lookup "extractor"` returned `[]`; `akp lookup "extraction"`
+returned the expected matches. The default FTS5 tokenizer indexes
+content verbatim and has no built-in stemming, so an agent typing the
+noun form misses canonical content using the verb form (or vice versa).
+
+**Ask:** Either (a) configure FTS5 with a stemming tokenizer (e.g.
+`porter`), (b) expand queries server-side with simple morphological
+variants (`extractor` → `extractor OR extraction OR extracts`), or (c)
+both. Real agents use natural language phrasing that drifts across
+morphological forms freely; the lookup surface should absorb that
+drift.
+
+**Why deferred:** FTS5 stemming requires schema migration on
+`.akp-local/akp.sqlite` (rebuild the FTS table with a different
+tokenizer, repopulate). Query-side expansion is simpler but adds rules
+that need to be tuned and tested. Neither is small. The current
+behavior is documentable as a v0.1 limit ("queries match the canonical
+text literally — try alternate phrasings if a query returns empty").
+
+**Reopen when:** A real user reports lookup misses on intuitive
+queries, or when the lookup surface is exposed in higher-stakes flows
+(e.g. brief), where a single bad query produces a confidently empty
+context.
+
+**Related code:** `src/store/sqlite/sqlite-store.ts` (FTS5 schema and
+query construction), `src/query/use-cases/index.ts` (`makeLookupKnowledge`).

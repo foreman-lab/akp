@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.33] - 2026-04-29
+
+### Fixed
+
+- **Use cases that declare a `<Name>Port` interface inline now inherit the `uses` edge.** Surfaced from a real consumer-side dogfood: `akp neighbors use_case.init-knowledge-base` returned `[]` even though the init use-case factory takes a `FileSystemPort` parameter — because `FileSystemPort` is declared in the same file (`src/init/use-cases/index.ts`) rather than imported from a sibling. The previous `extractImportedPortTargets` only scanned `import { ... }` statements and missed same-file declarations. Renamed and broadened to `extractFilePortTargets`, which now unions imported port symbols with `^export interface <Name>Port` declarations in the same file.
+
+### Internal
+
+- RED (`df87fbe`) → GREEN (this commit) TDD pair. 56/56 tests pass. Pure additive logic — files that only import ports still produce identical edge sets; files that also (or only) declare ports locally now produce edges they previously missed.
+- Two further consumer-side dogfood findings were added to `docs/BACKLOG.md` rather than fixed in this cycle: (a) `command` objects don't link to their implementing `use_case` objects; (b) FTS5 lookup is brittle to morphological variants ("extractor" misses content indexed as "extraction"). Each has a clear reopen trigger.
+
 ## [0.1.0-alpha.32] - 2026-04-29
 
 ### Fixed
